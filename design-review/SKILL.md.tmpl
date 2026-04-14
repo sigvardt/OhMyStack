@@ -9,7 +9,7 @@ description: |
   screenshots. For plan-mode design review (before implementation), use /plan-design-review.
   Use when asked to "audit the design", "visual QA", "check if it looks good", or "design polish".
   Proactively suggest when the user mentions visual inconsistencies or
-  wants to polish the look of a live site. (gstack)
+  wants to polish the look of a live site. (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -78,7 +78,7 @@ After the user chooses, execute their choice (commit or stash), then continue wi
 
 {{TEST_BOOTSTRAP}}
 
-**Find the gstack designer (optional — enables target mockup generation):**
+**Find the ohmystack designer (optional — enables target mockup generation):**
 
 {{DESIGN_SETUP}}
 
@@ -89,8 +89,8 @@ If `DESIGN_NOT_AVAILABLE`: skip mockup generation — the fix loop works without
 **Create output directories:**
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-REPORT_DIR=~/.gstack/projects/$SLUG/designs/design-audit-$(date +%Y%m%d)
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+REPORT_DIR=~/.ohmystack/projects/$SLUG/designs/design-audit-$(date +%Y%m%d)
 mkdir -p "$REPORT_DIR/screenshots"
 echo "REPORT_DIR: $REPORT_DIR"
 ```
@@ -105,6 +105,27 @@ echo "REPORT_DIR: $REPORT_DIR"
 
 {{DESIGN_HARD_RULES}}
 
+### OMO multi-agent dispatch during baseline
+
+Dispatch specialists as soon as the baseline scope is known. They do the heavy research while you run the screenshot workflow:
+
+1. **Explore pattern scan**
+   ```
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Inspect the repo for existing design patterns, design tokens, reusable components, spacing rules, typography choices, color variables, and page patterns relevant to the audited screens. Return concrete files, token names, and reuse opportunities so fixes stay consistent with the codebase.")
+   ```
+
+2. **Momus adversarial design critique**
+   ```
+   task(subagent_type="momus", run_in_background=true, load_skills=[], prompt="Critique the audited UI like an adversarial design reviewer. Hunt for hierarchy failures, broken affordances, uncanny/AI-slop patterns, visual inconsistency, accessibility-hostile choices, and interaction regressions that would embarrass the product team. Return only actionable findings with rationale.")
+   ```
+
+3. **Sisyphus-Junior fix-loop executor**
+   ```
+   task(category="quick", load_skills=["design-review"], run_in_background=false, prompt="For a single approved finding, execute one iteration of the fix loop only: locate the source, make the minimum targeted change, capture before/after evidence, and verify whether the issue is resolved without broad refactoring.")
+   ```
+
+Use the first two dispatches for research/critique and the quick dispatch pattern repeatedly inside Phase 8 for each finding you choose to fix.
+
 Record baseline design score and AI slop score at end of Phase 6.
 
 ---
@@ -112,7 +133,7 @@ Record baseline design score and AI slop score at end of Phase 6.
 ## Output Structure
 
 ```
-~/.gstack/projects/$SLUG/designs/design-audit-{YYYYMMDD}/
+~/.ohmystack/projects/$SLUG/designs/design-audit-{YYYYMMDD}/
 ├── design-audit-{domain}.md                  # Structured report
 ├── screenshots/
 │   ├── first-impression.png                  # Phase 1
@@ -158,9 +179,11 @@ For each fixable finding, in impact order:
 - ONLY modify files directly related to the finding
 - Prefer CSS/styling changes over structural component changes
 
+Before changing code, consume the Explore results for matching tokens/components so your fix reuses existing patterns instead of inventing new ones.
+
 ### 8a.5. Target Mockup (if DESIGN_READY)
 
-If the gstack designer is available and the finding involves visual layout, hierarchy, or spacing (not just a CSS value fix like wrong color or font-size), generate a target mockup showing what the corrected version should look like:
+If the ohmystack designer is available and the finding involves visual layout, hierarchy, or spacing (not just a CSS value fix like wrong color or font-size), generate a target mockup showing what the corrected version should look like:
 
 ```bash
 $D generate --brief "<description of the page/component with the finding fixed, referencing DESIGN.md constraints>" --output "$REPORT_DIR/screenshots/finding-NNN-target.png"
@@ -177,6 +200,12 @@ This step is optional — skip for trivial CSS fixes (wrong hex color, missing p
 - If a target mockup was generated in 8a.5, use it as the visual reference for the fix
 - CSS-only changes are preferred (safer, more reversible)
 - Do NOT refactor surrounding code, add features, or "improve" unrelated things
+
+**Dispatch pattern for every fixable finding:** after source is located and before commit, you may invoke the quick Sisyphus-Junior executor for that single finding to keep the loop tight:
+
+```
+task(category="quick", load_skills=["design-review"], run_in_background=false, prompt="Fix FINDING-NNN only. Use the existing design tokens/patterns already discovered, make the minimum source change, then report exactly what changed and what still needs manual verification.")
+```
 
 ### 8c. Commit
 
@@ -200,6 +229,8 @@ $B snapshot -D
 ```
 
 Take **before/after screenshot pair** for every fix.
+
+Cross-check the before/after pair against Momus's critique and the Explore pattern scan. If the fix resolves the screenshot issue but introduces a new inconsistency against established tokens/patterns, keep iterating before committing.
 
 ### 8e. Classify
 
@@ -260,7 +291,7 @@ Write the report to `$REPORT_DIR` (already set up in the setup phase):
 ```bash
 {{SLUG_SETUP}}
 ```
-Write a one-line summary to `~/.gstack/projects/{slug}/{user}-{branch}-design-audit-{datetime}.md` with a pointer to the full report in `$REPORT_DIR`.
+Write a one-line summary to `~/.ohmystack/projects/{slug}/{user}-{branch}-design-audit-{datetime}.md` with a pointer to the full report in `$REPORT_DIR`.
 
 **Per-finding additions** (beyond standard design audit report):
 - Fix Status: verified / best-effort / reverted / deferred

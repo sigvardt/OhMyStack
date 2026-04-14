@@ -9,7 +9,7 @@ description: |
   "investigate this error", or "root cause analysis".
   Proactively invoke this skill (do NOT debug directly) when the user reports
   errors, 500 errors, stack traces, unexpected behavior, "it was working
-  yesterday", or is troubleshooting why something stopped working. (gstack)
+  yesterday", or is troubleshooting why something stopped working. (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -61,6 +61,17 @@ Gather context before forming any hypothesis.
 
 4. **Reproduce:** Can you trigger the bug deterministically? If not, gather more evidence before proceeding.
 
+5. **OMO multi-agent evidence sweep:** Before settling on a root-cause hypothesis, launch **3-5 parallel Explore agents** that investigate the failure from different angles. Keep prompts narrowly scoped so each agent returns distinct evidence.
+
+   ```typescript
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: Debugging [error]. [GOAL]: Find error origin. [REQUEST]: Search for error message, stack trace origins, recent changes to affected files, and the earliest frame that points to application code.")
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: Debugging [error]. [GOAL]: Find related code paths. [REQUEST]: Search for callers, dependencies, and upstream/downstream code paths of the affected function or module.")
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: Debugging [error]. [GOAL]: Find environment/config contributors. [REQUEST]: Search configs, feature flags, env handling, deployment differences, and initialization paths that could explain the failure.")
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: Debugging [error]. [GOAL]: Find failing verification signals. [REQUEST]: Search tests, flaky specs, recent CI failures, reproduction scripts, and known issue notes related to this behavior.")
+   ```
+
+   Add a fifth Explore agent when needed for data migrations, cache behavior, concurrency, or external integrations. Wait for the evidence, synthesize overlaps, and only then write the root cause hypothesis.
+
 {{LEARNINGS_SEARCH}}
 
 Output: **"Root cause hypothesis: ..."** — a specific, testable claim about what is wrong and why.
@@ -78,7 +89,7 @@ After forming your root cause hypothesis, lock edits to the affected module to p
 **If FREEZE_AVAILABLE:** Identify the narrowest directory containing the affected files. Write it to the freeze state file:
 
 ```bash
-STATE_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.gstack}"
+STATE_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.ohmystack}"
 mkdir -p "$STATE_DIR"
 echo "<detected-directory>/" > "$STATE_DIR/freeze-dir.txt"
 echo "Debug scope locked to: <detected-directory>/"
@@ -123,6 +134,13 @@ Before writing ANY fix, verify your hypothesis.
 
 1. **Confirm the hypothesis:** Add a temporary log statement, assertion, or debug output at the suspected root cause. Run the reproduction. Does the evidence match?
 
+   **Oracle cross-check (recommended before committing to the fix):**
+   ```typescript
+   task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="[CONTEXT]: Debugging [error]. Evidence: [evidence]. [GOAL]: Evaluate hypotheses. [REQUEST]: Which hypothesis best explains the evidence, what evidence is still missing, and what observation would falsify the leading theory?")
+   ```
+
+   Use Oracle to challenge your reasoning, not replace it. If Oracle identifies a better explanation, return to Phase 1 and gather the missing proof.
+
 2. **If the hypothesis is wrong:** Before forming the next hypothesis, consider searching for the error. **Sanitize first** — strip hostnames, IPs, file paths, SQL fragments, customer identifiers, and any internal/proprietary data from the error message. Search only the generic error type and framework context: "{component} {sanitized error type} {framework version}". If the error message is too specific to sanitize safely, skip the search. If WebSearch is unavailable, skip and proceed. Then return to Phase 1. Gather more evidence. Do not guess.
 
 3. **3-strike rule:** If 3 hypotheses fail, **STOP**. Use AskUserQuestion:
@@ -153,6 +171,13 @@ Once root cause is confirmed:
 3. **Write a regression test** that:
    - **Fails** without the fix (proves the test is meaningful)
    - **Passes** with the fix (proves the fix works)
+
+   **Implementation dispatch:** Once the root cause is confirmed and the scope lock is in place, hand the concrete code change to Sisyphus-Junior for execution.
+   ```typescript
+   task(category="quick", load_skills=[], run_in_background=false, prompt="Fix: [root cause]. File: [path]. Change: [specific fix]. Add or update the regression test that proves the bug is fixed.")
+   ```
+
+   The dispatch prompt must include the confirmed root cause, target file(s), exact behavior to change, and the regression test requirement. Never dispatch a speculative fix.
 
 4. **Run the full test suite.** Paste the output. No regressions allowed.
 

@@ -10,11 +10,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 
-const GSTACK_DEV_DIR = path.join(os.homedir(), '.gstack-dev');
-const HEARTBEAT_PATH = path.join(GSTACK_DEV_DIR, 'e2e-live.json');
-const PARTIAL_PATH = path.join(GSTACK_DEV_DIR, 'evals', '_partial-e2e.json');
+const runtimeProcess = process as any;
+const HOME_DIR = process.env.HOME || '';
+const OHMYSTACK_DEV_DIR = path.join(HOME_DIR, '.ohmystack-dev');
+const HEARTBEAT_PATH = path.join(OHMYSTACK_DEV_DIR, 'e2e-live.json');
+const PARTIAL_PATH = path.join(OHMYSTACK_DEV_DIR, 'evals', '_partial-e2e.json');
 const STALE_THRESHOLD_SEC = 600; // 10 minutes
 
 export interface HeartbeatData {
@@ -55,7 +56,7 @@ function readJSON<T>(filePath: string): T | null {
 /** Check if a process is alive (signal 0 = existence check, doesn't kill). */
 function isProcessAlive(pid: number): boolean {
   try {
-    process.kill(pid, 0);
+    runtimeProcess.kill(pid, 0);
     return true;
   } catch {
     return false;
@@ -125,7 +126,7 @@ export function renderDashboard(heartbeat: HeartbeatData | null, partial: Partia
   lines.push(` Completed: ${completedCount}  Running: ${running}  Cost: $${totalCost.toFixed(2)}  Elapsed: ${formatDuration(elapsed)}`);
 
   if (heartbeat?.runId) {
-    const logPath = path.join(GSTACK_DEV_DIR, 'e2e-runs', heartbeat.runId, 'progress.log');
+    const logPath = path.join(OHMYSTACK_DEV_DIR, 'e2e-runs', heartbeat.runId, 'progress.log');
     lines.push(` Logs: ${logPath}`);
   }
 
@@ -134,8 +135,8 @@ export function renderDashboard(heartbeat: HeartbeatData | null, partial: Partia
 
 // --- Main ---
 
-if (import.meta.main) {
-  const showTail = process.argv.includes('--tail');
+if (runtimeProcess.argv[1] && path.resolve(runtimeProcess.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+  const showTail = runtimeProcess.argv.includes('--tail');
 
   const render = () => {
     let heartbeat = readJSON<HeartbeatData>(HEARTBEAT_PATH);
@@ -144,24 +145,24 @@ if (import.meta.main) {
     // Auto-clear heartbeat if the process is dead
     if (heartbeat?.pid && !isProcessAlive(heartbeat.pid)) {
       try { fs.unlinkSync(HEARTBEAT_PATH); } catch { /* already gone */ }
-      process.stdout.write('\x1B[2J\x1B[H');
-      process.stdout.write(`Cleared stale heartbeat — PID ${heartbeat.pid} is no longer running.\n\n`);
+        runtimeProcess.stdout.write('\x1B[2J\x1B[H');
+        runtimeProcess.stdout.write(`Cleared stale heartbeat — PID ${heartbeat.pid} is no longer running.\n\n`);
       heartbeat = null;
     }
 
     // Clear screen
-    process.stdout.write('\x1B[2J\x1B[H');
-    process.stdout.write(renderDashboard(heartbeat, partial) + '\n');
+    runtimeProcess.stdout.write('\x1B[2J\x1B[H');
+    runtimeProcess.stdout.write(renderDashboard(heartbeat, partial) + '\n');
 
     // --tail: show last 10 lines of progress.log
     if (showTail && heartbeat?.runId) {
-      const logPath = path.join(GSTACK_DEV_DIR, 'e2e-runs', heartbeat.runId, 'progress.log');
+      const logPath = path.join(OHMYSTACK_DEV_DIR, 'e2e-runs', heartbeat.runId, 'progress.log');
       try {
         const content = fs.readFileSync(logPath, 'utf-8');
         const tail = content.split('\n').filter(l => l.trim()).slice(-10);
-        process.stdout.write('\nRecent progress:\n');
+        runtimeProcess.stdout.write('\nRecent progress:\n');
         for (const line of tail) {
-          process.stdout.write(line + '\n');
+          runtimeProcess.stdout.write(line + '\n');
         }
       } catch { /* log file may not exist yet */ }
     }

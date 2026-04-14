@@ -42,7 +42,7 @@ export const E2E_TOUCHFILES: Record<string, string[]> = {
   'skillmd-outside-git':      ['SKILL.md', 'SKILL.md.tmpl', 'scripts/gen-skill-docs.ts'],
 
   'session-awareness':        ['SKILL.md', 'SKILL.md.tmpl', 'scripts/gen-skill-docs.ts'],
-  'operational-learning':     ['scripts/resolvers/preamble.ts', 'bin/gstack-learnings-log'],
+  'operational-learning':     ['scripts/resolvers/preamble.ts', 'bin/ohmystack-learnings-log'],
 
   // QA (+ test-server dependency)
   'qa-quick':       ['qa/**', 'browse/src/**', 'browse/test/test-server.ts'],
@@ -60,8 +60,8 @@ export const E2E_TOUCHFILES: Record<string, string[]> = {
   'review-design-lite':       ['review/**', 'test/fixtures/review-eval-design-slop.*'],
 
   // Review Army (specialist dispatch)
-  'review-army-migration-safety': ['review/**', 'scripts/resolvers/review-army.ts', 'bin/gstack-diff-scope'],
-  'review-army-perf-n-plus-one':  ['review/**', 'scripts/resolvers/review-army.ts', 'bin/gstack-diff-scope'],
+  'review-army-migration-safety': ['review/**', 'scripts/resolvers/review-army.ts', 'bin/ohmystack-diff-scope'],
+  'review-army-perf-n-plus-one':  ['review/**', 'scripts/resolvers/review-army.ts', 'bin/ohmystack-diff-scope'],
   'review-army-delivery-audit':   ['review/**', 'scripts/resolvers/review.ts', 'scripts/resolvers/review-army.ts'],
   'review-army-quality-score':    ['review/**', 'scripts/resolvers/review-army.ts'],
   'review-army-json-findings':    ['review/**', 'scripts/resolvers/review-army.ts'],
@@ -86,7 +86,7 @@ export const E2E_TOUCHFILES: Record<string, string[]> = {
   'codex-offered-eng-review':    ['plan-eng-review/**', 'scripts/gen-skill-docs.ts'],
 
   // Ship
-  'ship-base-branch': ['ship/**', 'bin/gstack-repo-mode'],
+  'ship-base-branch': ['ship/**', 'bin/ohmystack-repo-mode'],
   'ship-local-workflow': ['ship/**', 'scripts/gen-skill-docs.ts'],
   'review-dashboard-via': ['ship/**', 'scripts/resolvers/review.ts', 'codex/**', 'autoplan/**', 'land-and-deploy/**'],
   'ship-plan-completion': ['ship/**', 'scripts/gen-skill-docs.ts'],
@@ -97,7 +97,7 @@ export const E2E_TOUCHFILES: Record<string, string[]> = {
   'retro-base-branch': ['retro/**'],
 
   // Global discover
-  'global-discover':   ['bin/gstack-global-discover.ts', 'test/global-discover.test.ts'],
+  'global-discover':   ['bin/ohmystack-global-discover.ts', 'test/global-discover.test.ts'],
 
   // CSO
   'cso-full-audit':   ['cso/**'],
@@ -105,12 +105,12 @@ export const E2E_TOUCHFILES: Record<string, string[]> = {
   'cso-infra-scope':  ['cso/**'],
 
   // Learnings
-  'learnings-show': ['learn/**', 'bin/gstack-learnings-search', 'bin/gstack-learnings-log', 'scripts/resolvers/learnings.ts'],
+  'learnings-show': ['learn/**', 'bin/ohmystack-learnings-search', 'bin/ohmystack-learnings-log', 'scripts/resolvers/learnings.ts'],
 
   // Session Intelligence (timeline, context recovery, checkpoint)
-  'timeline-event-flow':         ['bin/gstack-timeline-log', 'bin/gstack-timeline-read'],
-  'context-recovery-artifacts':  ['scripts/resolvers/preamble.ts', 'bin/gstack-timeline-log', 'bin/gstack-slug', 'learn/**'],
-  'checkpoint-save-resume':      ['checkpoint/**', 'bin/gstack-slug'],
+  'timeline-event-flow':         ['bin/ohmystack-timeline-log', 'bin/ohmystack-timeline-read'],
+  'context-recovery-artifacts':  ['scripts/resolvers/preamble.ts', 'bin/ohmystack-timeline-log', 'bin/ohmystack-slug', 'learn/**'],
+  'checkpoint-save-resume':      ['checkpoint/**', 'bin/ohmystack-slug'],
 
   // Document-release
   'document-release': ['document-release/**'],
@@ -120,18 +120,18 @@ export const E2E_TOUCHFILES: Record<string, string[]> = {
 
   // Codex E2E (tests skills via Codex CLI + worktree)
   'codex-discover-skill':  ['codex/**', '.agents/skills/**', 'test/helpers/codex-session-runner.ts', 'lib/worktree.ts'],
-  'codex-review-findings': ['review/**', '.agents/skills/gstack-review/**', 'codex/**', 'test/helpers/codex-session-runner.ts', 'lib/worktree.ts'],
+  'codex-review-findings': ['review/**', '.agents/skills/ohmystack-review/**', 'codex/**', 'test/helpers/codex-session-runner.ts', 'lib/worktree.ts'],
 
   // Gemini E2E (tests skills via Gemini CLI + worktree)
   'gemini-discover-skill':  ['.agents/skills/**', 'test/helpers/gemini-session-runner.ts', 'lib/worktree.ts'],
-  'gemini-review-findings': ['review/**', '.agents/skills/gstack-review/**', 'test/helpers/gemini-session-runner.ts', 'lib/worktree.ts'],
+  'gemini-review-findings': ['review/**', '.agents/skills/ohmystack-review/**', 'test/helpers/gemini-session-runner.ts', 'lib/worktree.ts'],
 
 
   // Coverage audit (shared fixture) + triage + gates
-  'ship-coverage-audit': ['ship/**', 'test/fixtures/coverage-audit-fixture.ts', 'bin/gstack-repo-mode'],
+  'ship-coverage-audit': ['ship/**', 'test/fixtures/coverage-audit-fixture.ts', 'bin/ohmystack-repo-mode'],
   'review-coverage-audit': ['review/**', 'test/fixtures/coverage-audit-fixture.ts'],
   'plan-eng-coverage-audit': ['plan-eng-review/**', 'test/fixtures/coverage-audit-fixture.ts'],
-  'ship-triage': ['ship/**', 'bin/gstack-repo-mode'],
+  'ship-triage': ['ship/**', 'bin/ohmystack-repo-mode'],
 
   // Plan completion audit + verification
   'ship-plan-completion': ['ship/**', 'scripts/gen-skill-docs.ts'],
@@ -153,13 +153,13 @@ export const E2E_TOUCHFILES: Record<string, string[]> = {
   'design-shotgun-session':         ['design-shotgun/**', 'scripts/resolvers/design.ts'],
   'design-shotgun-full':            ['design-shotgun/**', 'design/src/**', 'browse/src/**'],
 
-  // gstack-upgrade
-  'gstack-upgrade-happy-path': ['gstack-upgrade/**'],
+  // ohmystack-upgrade
+  'ohmystack-upgrade-happy-path': ['ohmystack-upgrade/**'],
 
   // Deploy skills
   'land-and-deploy-workflow':      ['land-and-deploy/**', 'scripts/gen-skill-docs.ts'],
-  'land-and-deploy-first-run':     ['land-and-deploy/**', 'scripts/gen-skill-docs.ts', 'bin/gstack-slug'],
-  'land-and-deploy-review-gate':   ['land-and-deploy/**', 'bin/gstack-review-read'],
+  'land-and-deploy-first-run':     ['land-and-deploy/**', 'scripts/gen-skill-docs.ts', 'bin/ohmystack-slug'],
+  'land-and-deploy-review-gate':   ['land-and-deploy/**', 'bin/ohmystack-review-read'],
   'canary-workflow':               ['canary/**', 'browse/src/**'],
   'benchmark-workflow':            ['benchmark/**', 'browse/src/**'],
   'setup-deploy-workflow':         ['setup-deploy/**', 'scripts/gen-skill-docs.ts'],
@@ -299,8 +299,8 @@ export const E2E_TIERS: Record<string, 'gate' | 'periodic'> = {
   'design-shotgun-session': 'gate',
   'design-shotgun-full': 'periodic',
 
-  // gstack-upgrade
-  'gstack-upgrade-happy-path': 'gate',
+  // ohmystack-upgrade
+  'ohmystack-upgrade-happy-path': 'gate',
 
   // Deploy skills
   'land-and-deploy-workflow': 'gate',
@@ -372,7 +372,7 @@ export const LLM_JUDGE_TOUCHFILES: Record<string, string[]> = {
   // Other skills
   'retro/SKILL.md instructions':          ['retro/SKILL.md', 'retro/SKILL.md.tmpl'],
   'qa-only/SKILL.md workflow':            ['qa-only/SKILL.md', 'qa-only/SKILL.md.tmpl'],
-  'gstack-upgrade/SKILL.md upgrade flow': ['gstack-upgrade/SKILL.md', 'gstack-upgrade/SKILL.md.tmpl'],
+  'ohmystack-upgrade/SKILL.md upgrade flow': ['ohmystack-upgrade/SKILL.md', 'ohmystack-upgrade/SKILL.md.tmpl'],
 
   // Voice directive
   'voice directive tone':                 ['scripts/resolvers/preamble.ts', 'review/SKILL.md', 'review/SKILL.md.tmpl', 'scripts/gen-skill-docs.ts'],

@@ -9,7 +9,7 @@ description: |
   of truth. For existing sites, use /plan-design-review to infer the system instead.
   Use when asked to "design system", "brand guidelines", or "create DESIGN.md".
   Proactively suggest when starting a new project's UI with no existing
-  design system or DESIGN.md. (gstack)
+  design system or DESIGN.md. (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -55,7 +55,7 @@ Look for office-hours output:
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
 {{SLUG_EVAL}}
-ls ~/.gstack/projects/$SLUG/*office-hours* 2>/dev/null | head -5
+ls ~/.ohmystack/projects/$SLUG/*office-hours* 2>/dev/null | head -5
 ls .context/*office-hours* .context/attachments/*office-hours* 2>/dev/null | head -5
 ```
 
@@ -69,13 +69,34 @@ If the codebase is empty and purpose is unclear, say: *"I don't have a clear pic
 
 If browse is not available, that's fine — visual research is optional. The skill works without it using WebSearch and your built-in design knowledge.
 
-**Find the gstack designer (optional — enables AI mockup generation):**
+**Find the ohmystack designer (optional — enables AI mockup generation):**
 
 {{DESIGN_SETUP}}
 
 If `DESIGN_READY`: Phase 5 will generate AI mockups of your proposed design system applied to real screens, instead of just an HTML preview page. Much more powerful — the user sees what their product could actually look like.
 
 If `DESIGN_NOT_AVAILABLE`: Phase 5 falls back to the HTML preview page (still good).
+
+### OMO multi-agent dispatch plan
+
+As soon as product context is clear enough, use specialists to parallelize the heavy research and coherence checks:
+
+1. **Librarian landscape research**
+   ```
+   task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="Research the relevant design landscape for this product category. Focus on competitor design systems, typography trends, color system patterns, interaction tone, and any visual clichés to avoid. Return concrete references and a concise synthesis.")
+   ```
+
+2. **Explore codebase pattern scan**
+   ```
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Inspect the repo for existing design patterns, color tokens, typography choices, spacing scales, reusable components, marketing/app shells, and any current design drift. Return concrete file paths, token names, and patterns worth preserving or replacing.")
+   ```
+
+3. **Oracle coherence verifier**
+   ```
+   task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="After the initial design-system proposal is drafted, verify that the aesthetic, typography, color, spacing, layout, and motion choices form a coherent system for the stated product and audience. Call out contradictions, fragile choices, and any mismatch between the proposal and the codebase constraints.")
+   ```
+
+Use these dispatches to inform Phases 2-5. The main skill still owns the proposal, DESIGN.md output, and preview generation.
 
 ---
 
@@ -98,6 +119,8 @@ If the README or office-hours output gives you enough context, pre-fill and conf
 ## Phase 2: Research (only if user said yes)
 
 If the user wants competitive research:
+
+Kick off the Librarian and Explore dispatches at the start of this phase. Continue the user conversation while they run; do not duplicate their searches manually.
 
 **Step 1: Identify what's out there via WebSearch**
 
@@ -139,6 +162,11 @@ Summarize conversationally:
 - Browse unavailable → WebSearch only (still good)
 - WebSearch also unavailable → agent's built-in design knowledge (always works)
 
+When specialist results land, blend them explicitly:
+- **Librarian** informs the external landscape, category norms, typography trends, and color-theory opportunities.
+- **Explore** informs what the codebase already supports and which tokens/components should anchor the recommendation.
+- **Oracle** does not decide the taste for you; it verifies the proposal is internally coherent before you lock the system.
+
 If the user said no research, skip entirely and proceed to Phase 3 using your built-in design knowledge.
 
 ---
@@ -177,6 +205,14 @@ different ones? Or adjust anything else?
 ```
 
 The SAFE/RISK breakdown is critical. Design coherence is table stakes — every product in a category can be coherent and still look identical. The real question is: where do you take creative risks? The agent should always propose at least 2 risks, each with a clear rationale for why the risk is worth taking and what the user gives up. Risks might include: an unexpected typeface for the category, a bold accent color nobody else uses, tighter or looser spacing than the norm, a layout approach that breaks from convention, motion choices that add personality.
+
+Before finalizing Q2, compare the proposal against:
+
+1. the Librarian research synthesis,
+2. the Explore codebase scan,
+3. the Oracle coherence verification.
+
+If Oracle flags a contradiction, keep the proposal conversational but surface the mismatch plainly: what clashes, why it matters, and whether you recommend adjusting it before generating previews or writing DESIGN.md.
 
 **Options:** A) Looks great — generate the preview page. B) I want to adjust [section]. C) I want different risks — show me wilder options. D) Start over with a different direction. E) Skip the preview, just write DESIGN.md.
 
@@ -249,15 +285,15 @@ Each drill-down is one focused AskUserQuestion. After the user decides, re-check
 
 ## Phase 5: Design System Preview (default ON)
 
-This phase generates visual previews of the proposed design system. Two paths depending on whether the gstack designer is available.
+This phase generates visual previews of the proposed design system. Two paths depending on whether the ohmystack designer is available.
 
 ### Path A: AI Mockups (if DESIGN_READY)
 
 Generate AI-rendered mockups showing the proposed design system applied to realistic screens for this product. This is far more powerful than an HTML preview — the user sees what their product could actually look like.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-_DESIGN_DIR=~/.gstack/projects/$SLUG/designs/design-system-$(date +%Y%m%d)
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+_DESIGN_DIR=~/.ohmystack/projects/$SLUG/designs/design-system-$(date +%Y%m%d)
 mkdir -p "$_DESIGN_DIR"
 echo "DESIGN_DIR: $_DESIGN_DIR"
 ```

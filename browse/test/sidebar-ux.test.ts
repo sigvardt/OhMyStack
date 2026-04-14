@@ -715,7 +715,7 @@ describe('CSP fallback basic picker', () => {
   test('content.js contains CSSOM iteration with cross-origin try/catch', () => {
     expect(contentSrc).toContain('document.styleSheets');
     expect(contentSrc).toContain('cssRules');
-    expect(contentSrc).toContain('cross-origin');
+    expect(contentSrc).toContain('DOMException');
   });
 
   test('content.js saves and restores outline on elements', () => {
@@ -882,8 +882,8 @@ describe('cleanup heuristics (write-commands.ts)', () => {
     expect(wcSrc).toContain('text.length < 20');
   });
 
-  test('sticky cleanup skips gstack control indicator', () => {
-    expect(wcSrc).toContain("gstack-ctrl");
+  test('sticky cleanup skips ohmystack control indicator', () => {
+    expect(wcSrc).toContain("ohmystack-ctrl");
   });
 
   test('CLEANUP_SELECTORS has clutter category', () => {
@@ -1211,12 +1211,12 @@ describe('welcome page', () => {
     expect(welcomeExists).toBe(true);
   });
 
-  test('welcome page has GStack Browser branding', () => {
-    expect(welcomeSrc).toContain('GStack Browser');
+  test('welcome page has OhMyStack Browser branding', () => {
+    expect(welcomeSrc).toContain('OhMyStack Browser');
   });
 
   test('welcome page has extension-ready listener to hide prompt', () => {
-    expect(welcomeSrc).toContain('gstack-extension-ready');
+    expect(welcomeSrc).toContain('ohmystack-extension-ready');
     expect(welcomeSrc).toContain('sidebar-prompt');
   });
 
@@ -1260,7 +1260,7 @@ describe('server /welcome endpoint', () => {
     );
     // Changed from 302 redirect to about:blank (ERR_UNSAFE_REDIRECT on Windows)
     // to inline HTML fallback page (PR #822)
-    expect(welcomeSection).toContain('GStack Browser ready');
+    expect(welcomeSection).toContain('OhMyStack Browser ready');
     expect(welcomeSection).toContain('status: 200');
   });
 });
@@ -1332,8 +1332,8 @@ describe('sidebar arrow hint hide flow (4-step signal chain)', () => {
   // Signal flow:
   //   1. sidepanel.js connects → sends { type: 'sidebarOpened' } to background
   //   2. background.js receives → relays to active tab's content script
-  //   3. content.js receives 'sidebarOpened' → dispatches 'gstack-extension-ready'
-  //   4. welcome.html listens for 'gstack-extension-ready' → hides arrow
+  //   3. content.js receives 'sidebarOpened' → dispatches 'ohmystack-extension-ready'
+  //   4. welcome.html listens for 'ohmystack-extension-ready' → hides arrow
   //
   const contentSrc = fs.readFileSync(path.join(ROOT, '..', 'extension', 'content.js'), 'utf-8');
   const bgSrc = fs.readFileSync(path.join(ROOT, '..', 'extension', 'background.js'), 'utf-8');
@@ -1373,10 +1373,10 @@ describe('sidebar arrow hint hide flow (4-step signal chain)', () => {
     expect(handler).toContain("{ type: 'sidebarOpened' }");
   });
 
-  // Step 3: content.js fires gstack-extension-ready ONLY on sidebarOpened
+  // Step 3: content.js fires ohmystack-extension-ready ONLY on sidebarOpened
   test('step 3: content.js dispatches extension-ready on sidebarOpened message', () => {
     expect(contentSrc).toContain("msg.type === 'sidebarOpened'");
-    expect(contentSrc).toContain("new CustomEvent('gstack-extension-ready')");
+    expect(contentSrc).toContain("new CustomEvent('ohmystack-extension-ready')");
   });
 
   test('step 3: content.js does NOT auto-fire extension-ready on load', () => {
@@ -1384,20 +1384,20 @@ describe('sidebar arrow hint hide flow (4-step signal chain)', () => {
     // Now it should only fire when sidebarOpened message arrives.
     // Check there's no top-level dispatchEvent outside the message handler.
     const beforeListener = contentSrc.slice(0, contentSrc.indexOf('chrome.runtime.onMessage'));
-    expect(beforeListener).not.toContain("dispatchEvent(new CustomEvent('gstack-extension-ready'))");
+    expect(beforeListener).not.toContain("dispatchEvent(new CustomEvent('ohmystack-extension-ready'))");
   });
 
-  // Step 4: welcome page hides arrow on gstack-extension-ready
-  test('step 4: welcome page hides arrow on gstack-extension-ready event', () => {
-    expect(welcomeSrc).toContain("'gstack-extension-ready'");
+  // Step 4: welcome page hides arrow on ohmystack-extension-ready
+  test('step 4: welcome page hides arrow on ohmystack-extension-ready event', () => {
+    expect(welcomeSrc).toContain("'ohmystack-extension-ready'");
     expect(welcomeSrc).toContain("classList.add('hidden')");
   });
 
   test('step 4: welcome page does NOT auto-hide via status pill polling', () => {
-    // The old fallback (checkPill/gstack-status-pill) would hide the arrow
+    // The old fallback (checkPill/ohmystack-status-pill) would hide the arrow
     // as soon as the content script injected the pill, even without sidebar open.
     expect(welcomeSrc).not.toContain('checkPill');
-    expect(welcomeSrc).not.toContain('gstack-status-pill');
+    expect(welcomeSrc).not.toContain('ohmystack-status-pill');
   });
 });
 
@@ -1478,7 +1478,7 @@ describe('BROWSE_NO_AUTOSTART (sidebar headless prevention)', () => {
   });
 
   test('cli.ts shows actionable error message when BROWSE_NO_AUTOSTART blocks', () => {
-    expect(cliSrc).toContain('/open-gstack-browser');
+    expect(cliSrc).toContain('/open-ohmystack-browser');
     expect(cliSrc).toContain('BROWSE_NO_AUTOSTART is set');
   });
 

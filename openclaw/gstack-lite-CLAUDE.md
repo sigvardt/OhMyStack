@@ -1,4 +1,4 @@
-# gstack-lite Planning Discipline
+# ohmystack-lite Planning Discipline
 
 Injected by the orchestrator into spawned Claude Code sessions. Append to existing CLAUDE.md.
 

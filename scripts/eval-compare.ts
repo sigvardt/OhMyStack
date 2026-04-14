@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Compare two eval runs from ~/.gstack-dev/evals/
+ * Compare two eval runs from ~/.ohmystack-dev/evals/
  *
  * Usage:
  *   bun run eval:compare                    # compare two most recent of same tier
@@ -10,7 +10,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import {
   findPreviousRun,
   compareEvalResults,

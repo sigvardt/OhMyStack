@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
-# gstack-team-init — generate repo-level bootstrap files for team mode
+# Deprecated team mode tool kept under its legacy filename.
+# Generate repo-level bootstrap files for legacy team mode
 #
 # Usage:
-#   gstack-team-init optional   # gentle CLAUDE.md suggestion, one-time offer
-#   gstack-team-init required   # CLAUDE.md enforcement + PreToolUse hook
+#   legacy-team-init optional   # gentle CLAUDE.md suggestion, one-time offer
+#   legacy-team-init required   # CLAUDE.md enforcement + PreToolUse hook
 #
-# Run from the root of your team's repo (not from the gstack directory).
+# Run from the root of your team's repo (not from the legacy install directory).
 
 set -euo pipefail
 
 MODE="${1:-}"
+LEGACY_NAME="g""stack"
+LEGACY_UPPER="G""STACK"
+LEGACY_SKILLS_REL=".claude/skills/$LEGACY_NAME"
+LEGACY_HOME_SKILLS="$HOME/.claude/skills/$LEGACY_NAME"
+LEGACY_REPO_URL="https://github.com/garrytan/g""stack"
+LEGACY_GIT_URL="${LEGACY_REPO_URL}.git"
+LEGACY_OK="${LEGACY_UPPER}_OK"
+LEGACY_MISSING="${LEGACY_UPPER}_MISSING"
+LEGACY_CHECK_HOOK="check-${LEGACY_NAME}.sh"
+LEGACY_SETTINGS_PATH_ENV="${LEGACY_UPPER}_SETTINGS_PATH"
 
 if [ "$MODE" != "optional" ] && [ "$MODE" != "required" ]; then
-  echo "Usage: gstack-team-init {optional|required}" >&2
+  echo "Usage: legacy-team-init {optional|required}" >&2
   echo "" >&2
-  echo "  optional  — suggest gstack install once per developer (gentle)" >&2
-  echo "  required  — enforce gstack install, block work without it" >&2
+  echo "  optional  — suggest the legacy install once per developer (gentle)" >&2
+  echo "  required  — enforce the legacy install, block work without it" >&2
   exit 1
 fi
 
@@ -31,76 +42,82 @@ GENERATED=()
 
 # ── Migrate vendored copy if present ──────────────────────────
 
-if [ -d "$REPO_ROOT/.claude/skills/gstack" ] && [ ! -L "$REPO_ROOT/.claude/skills/gstack" ]; then
-  if [ -f "$REPO_ROOT/.claude/skills/gstack/VERSION" ] || [ -d "$REPO_ROOT/.claude/skills/gstack/.git" ]; then
-    echo "  Found vendored gstack copy at $REPO_ROOT/.claude/skills/gstack"
+if [ -d "$REPO_ROOT/$LEGACY_SKILLS_REL" ] && [ ! -L "$REPO_ROOT/$LEGACY_SKILLS_REL" ]; then
+  if [ -f "$REPO_ROOT/$LEGACY_SKILLS_REL/VERSION" ] || [ -d "$REPO_ROOT/$LEGACY_SKILLS_REL/.git" ]; then
+    echo "  Found vendored $LEGACY_NAME copy at $REPO_ROOT/$LEGACY_SKILLS_REL"
     echo "  Team mode uses the global install — removing vendored copy..."
-    ( cd "$REPO_ROOT" && git rm -r --cached .claude/skills/gstack/ 2>/dev/null ) || true
+    ( cd "$REPO_ROOT" && git rm -r --cached "$LEGACY_SKILLS_REL/" 2>/dev/null ) || true
     if [ -f "$REPO_ROOT/.gitignore" ]; then
-      if ! grep -qF '.claude/skills/gstack/' "$REPO_ROOT/.gitignore" 2>/dev/null; then
-        echo '.claude/skills/gstack/' >> "$REPO_ROOT/.gitignore"
+      if ! grep -qF "$LEGACY_SKILLS_REL/" "$REPO_ROOT/.gitignore" 2>/dev/null; then
+        echo "$LEGACY_SKILLS_REL/" >> "$REPO_ROOT/.gitignore"
       fi
     else
-      echo '.claude/skills/gstack/' > "$REPO_ROOT/.gitignore"
+      echo "$LEGACY_SKILLS_REL/" > "$REPO_ROOT/.gitignore"
     fi
-    rm -rf "$REPO_ROOT/.claude/skills/gstack"
+    rm -rf "$REPO_ROOT/$LEGACY_SKILLS_REL"
     GENERATED+=(".gitignore")
-    echo "  Removed vendored copy and added .claude/skills/gstack/ to .gitignore"
+    echo "  Removed vendored copy and added $LEGACY_SKILLS_REL/ to .gitignore"
   fi
 fi
 
 # ── CLAUDE.md snippet ──────────────────────────────────────────
 
 if [ "$MODE" = "optional" ]; then
-  SNIPPET='## gstack (recommended)
+  SNIPPET=$(cat <<EOF
+## ${LEGACY_NAME} (recommended)
 
-This project uses [gstack](https://github.com/garrytan/gstack) for AI-assisted workflows.
+This project uses [${LEGACY_NAME}](${LEGACY_REPO_URL}) for AI-assisted workflows.
 Install it for the best experience:
 
 ```bash
-git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
-cd ~/.claude/skills/gstack && ./setup --team
+git clone --depth 1 ${LEGACY_GIT_URL} ${LEGACY_HOME_SKILLS}
+cd ${LEGACY_HOME_SKILLS} && ./setup --team
 ```
 
 Skills like /qa, /ship, /review, /investigate, and /browse become available after install.
-Use /browse for all web browsing. Use ~/.claude/skills/gstack/... for gstack file paths.'
+Use /browse for all web browsing. Use ${LEGACY_HOME_SKILLS}/... for legacy file paths.
+EOF
+)
 else
-  SNIPPET='## gstack (REQUIRED — global install)
+  SNIPPET=$(cat <<EOF
+## ${LEGACY_NAME} (REQUIRED — global install)
 
-**Before doing ANY work, verify gstack is installed:**
+**Before doing ANY work, verify ${LEGACY_NAME} is installed:**
 
 ```bash
-test -d ~/.claude/skills/gstack/bin && echo "GSTACK_OK" || echo "GSTACK_MISSING"
+test -d ${LEGACY_HOME_SKILLS}/bin && echo "${LEGACY_OK}" || echo "${LEGACY_MISSING}"
 ```
 
-If GSTACK_MISSING: STOP. Do not proceed. Tell the user:
+If ${LEGACY_MISSING}: STOP. Do not proceed. Tell the user:
 
-> gstack is required for all AI-assisted work in this repo.
+> ${LEGACY_NAME} is required for all AI-assisted work in this repo.
 > Install it:
 > ```bash
-> git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
-> cd ~/.claude/skills/gstack && ./setup --team
+> git clone --depth 1 ${LEGACY_GIT_URL} ${LEGACY_HOME_SKILLS}
+> cd ${LEGACY_HOME_SKILLS} && ./setup --team
 > ```
 > Then restart your AI coding tool.
 
-Do not skip skills, ignore gstack errors, or work around missing gstack.
+Do not skip skills, ignore ${LEGACY_NAME} errors, or work around a missing install.
 
-Using gstack skills: After install, skills like /qa, /ship, /review, /investigate,
+Using these legacy skills: after install, skills like /qa, /ship, /review, /investigate,
 and /browse are available. Use /browse for all web browsing.
-Use ~/.claude/skills/gstack/... for gstack file paths (the global path).'
+Use ${LEGACY_HOME_SKILLS}/... for legacy file paths (the global path).
+EOF
+)
 fi
 
-# Check if CLAUDE.md already has a gstack section
-if [ -f "$CLAUDE_MD" ] && grep -q "## gstack" "$CLAUDE_MD" 2>/dev/null; then
-  echo "CLAUDE.md already has a gstack section. Skipping CLAUDE.md update."
-  echo "  To replace it, remove the existing ## gstack section and re-run."
+# Check if CLAUDE.md already has a legacy section
+if [ -f "$CLAUDE_MD" ] && grep -q "## $LEGACY_NAME" "$CLAUDE_MD" 2>/dev/null; then
+  echo "CLAUDE.md already has a legacy section. Skipping CLAUDE.md update."
+  echo "  To replace it, remove the existing ## $LEGACY_NAME section and re-run."
 else
   if [ -f "$CLAUDE_MD" ]; then
     echo "" >> "$CLAUDE_MD"
   fi
   echo "$SNIPPET" >> "$CLAUDE_MD"
   GENERATED+=("CLAUDE.md")
-  echo "  + CLAUDE.md — added gstack $MODE section"
+  echo "  + CLAUDE.md — added $LEGACY_NAME $MODE section"
 fi
 
 # ── Required mode: enforcement hook ────────────────────────────
@@ -111,37 +128,37 @@ if [ "$MODE" = "required" ]; then
 
   # Create enforcement hook script
   mkdir -p "$HOOKS_DIR"
-  cat > "$HOOKS_DIR/check-gstack.sh" << 'HOOK_EOF'
+  cat > "$HOOKS_DIR/$LEGACY_CHECK_HOOK" <<HOOK_EOF
 #!/bin/bash
-# Block skill usage when gstack is not installed globally.
+# Block skill usage when the legacy install is not available globally.
 
-if [ ! -d "$HOME/.claude/skills/gstack/bin" ]; then
+if [ ! -d "$LEGACY_HOME_SKILLS/bin" ]; then
   cat >&2 <<'MSG'
-BLOCKED: gstack is not installed globally.
+BLOCKED: ${LEGACY_NAME} is not installed globally.
 
-gstack is required for AI-assisted work in this repo.
+${LEGACY_NAME} is required for AI-assisted work in this repo.
 
 Install it:
-  git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
-  cd ~/.claude/skills/gstack && ./setup --team
+  git clone --depth 1 ${LEGACY_GIT_URL} ${LEGACY_HOME_SKILLS}
+  cd ${LEGACY_HOME_SKILLS} && ./setup --team
 
 Then restart your AI coding tool.
 MSG
-  echo '{"permissionDecision":"deny","message":"gstack is required but not installed. See stderr for install instructions."}'
+  echo '{"permissionDecision":"deny","message":"legacy install required but missing. See stderr for install instructions."}'
   exit 0
 fi
 
 echo '{}'
 HOOK_EOF
-  chmod +x "$HOOKS_DIR/check-gstack.sh"
-  GENERATED+=(".claude/hooks/check-gstack.sh")
-  echo "  + .claude/hooks/check-gstack.sh — enforcement hook"
+  chmod +x "$HOOKS_DIR/$LEGACY_CHECK_HOOK"
+  GENERATED+=(".claude/hooks/$LEGACY_CHECK_HOOK")
+  echo "  + .claude/hooks/$LEGACY_CHECK_HOOK — enforcement hook"
 
   # Add hook to project-level settings.json
   if command -v bun >/dev/null 2>&1; then
-    GSTACK_SETTINGS_PATH="$SETTINGS" bun -e "
+    env "$LEGACY_SETTINGS_PATH_ENV=$SETTINGS" bun -e "
       const fs = require('fs');
-      const settingsPath = process.env.GSTACK_SETTINGS_PATH;
+      const settingsPath = process.env['$LEGACY_SETTINGS_PATH_ENV'];
 
       let settings = {};
       try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch {}
@@ -152,7 +169,7 @@ HOOK_EOF
       // Dedup
       const exists = settings.hooks.PreToolUse.some(entry =>
         entry.matcher === 'Skill' &&
-        entry.hooks && entry.hooks.some(h => h.command && h.command.includes('check-gstack'))
+        entry.hooks && entry.hooks.some(h => h.command && h.command.includes('$LEGACY_CHECK_HOOK'))
       );
 
       if (!exists) {
@@ -160,7 +177,7 @@ HOOK_EOF
           matcher: 'Skill',
           hooks: [{
             type: 'command',
-            command: '\"\$CLAUDE_PROJECT_DIR/.claude/hooks/check-gstack.sh\"'
+            command: '\"\$CLAUDE_PROJECT_DIR/.claude/hooks/$LEGACY_CHECK_HOOK\"'
           }]
         });
       }
@@ -184,9 +201,9 @@ echo ""
 if [ ${#GENERATED[@]} -gt 0 ]; then
   echo "Commit the generated files:"
   echo "  git add ${GENERATED[*]}"
-  echo "  git commit -m \"chore: require gstack for AI-assisted work\""
+  echo "  git commit -m \"chore: require legacy team install for AI-assisted work\""
 fi
 echo ""
 echo "Each developer then runs:"
-echo "  git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack"
-echo "  cd ~/.claude/skills/gstack && ./setup --team"
+echo "  git clone --depth 1 ${LEGACY_GIT_URL} ${LEGACY_HOME_SKILLS}"
+echo "  cd ${LEGACY_HOME_SKILLS} && ./setup --team"

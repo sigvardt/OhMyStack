@@ -1,4 +1,4 @@
-// gstack community-pulse edge function
+// ohmystack community-pulse edge function
 // Returns aggregated community stats for the dashboard:
 // weekly active count, top skills, crash clusters, version distribution.
 // Uses server-side cache (community_pulse_cache table) to prevent DoS.
@@ -80,21 +80,21 @@ Deno.serve(async () => {
     // Crash clusters (top 5)
     const { data: crashes } = await supabase
       .from("crash_clusters")
-      .select("error_class, gstack_version, total_occurrences, identified_users")
+      .select("error_class, ohmystack_version, total_occurrences, identified_users")
       .limit(5);
 
     // Version distribution (last 7 days)
     const versionCounts: Record<string, number> = {};
     const { data: versionRows } = await supabase
       .from("telemetry_events")
-      .select("gstack_version")
+      .select("ohmystack_version")
       .eq("event_type", "skill_run")
       .gte("event_timestamp", weekAgo)
       .limit(1000);
 
     for (const row of versionRows ?? []) {
-      if (row.gstack_version) {
-        versionCounts[row.gstack_version] = (versionCounts[row.gstack_version] ?? 0) + 1;
+      if (row.ohmystack_version) {
+        versionCounts[row.ohmystack_version] = (versionCounts[row.ohmystack_version] ?? 0) + 1;
       }
     }
     const topVersions = Object.entries(versionCounts)

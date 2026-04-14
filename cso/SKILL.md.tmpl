@@ -8,7 +8,7 @@ description: |
   scanning, plus OWASP Top 10, STRIDE threat modeling, and active verification.
   Two modes: daily (zero-noise, 8/10 confidence gate) and comprehensive (monthly deep
   scan, 2/10 bar). Trend tracking across audit runs.
-  Use when: "security audit", "threat model", "pentest review", "OWASP", "CSO review". (gstack)
+  Use when: "security audit", "threat model", "pentest review", "OWASP", "CSO review". (ohmystack)
 voice-triggers:
   - "see-so"
   - "see so"
@@ -153,6 +153,16 @@ INFRASTRUCTURE SURFACE
 
 Scan git history for leaked credentials, check tracked `.env` files, find CI configs with inline secrets.
 
+**OMO multi-agent dispatch:** Run the high-signal scans in parallel so secrets work does not bottleneck the audit.
+
+```typescript
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 2 secrets archaeology. [GOAL]: Find exposed credentials in git history. [REQUEST]: Search for known secret prefixes, suspicious additions in config/env files, and branch-only leaks when diff mode is active.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 2 secrets archaeology. [GOAL]: Find tracked secret files. [REQUEST]: Search for tracked .env files, weak .gitignore coverage, suspicious example values, and secret-bearing config files.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 2 secrets archaeology. [GOAL]: Find CI secret exposure. [REQUEST]: Search workflow files and CI configs for inline credentials, unsafe env propagation, and log-leak patterns.")
+```
+
+Synthesize the results into one candidate set, then apply the Phase 12 confidence gate before reporting anything.
+
 **Git history — known secret prefixes:**
 ```bash
 git log -p --all -S "AKIA" --diff-filter=A -- "*.env" "*.yml" "*.yaml" "*.json" "*.toml" 2>/dev/null
@@ -185,6 +195,19 @@ done 2>/dev/null
 
 Goes beyond `npm audit`. Checks actual supply chain risk.
 
+**OMO multi-agent dispatch:** Split supply-chain work by evidence source.
+
+```typescript
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 3 dependency audit. [GOAL]: Find vulnerable or risky dependencies. [REQUEST]: Inspect lockfiles, manifests, audit outputs, and direct dependency lists for high-signal risk.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 3 dependency audit. [GOAL]: Find install-script and provenance risks. [REQUEST]: Search production dependencies for preinstall/postinstall/install scripts, untrusted registries, and missing lockfile integrity signals.")
+```
+
+If a dependency issue is unclear or tied to an ecosystem convention you do not recognize, queue a documentation lookup with Librarian before scoring severity.
+
+```typescript
+task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 3 dependency audit. [GOAL]: Validate ecosystem-specific supply-chain risk. [REQUEST]: Look up the package manager or dependency pattern involved, summarize known abuse cases or guidance, and cite the best-practice baseline for severity calibration.")
+```
+
 **Package manager detection:**
 ```bash
 [ -f package.json ] && echo "DETECTED: npm/yarn/bun"
@@ -207,6 +230,13 @@ Goes beyond `npm audit`. Checks actual supply chain risk.
 ### Phase 4: CI/CD Pipeline Security
 
 Check who can modify workflows and what secrets they can access.
+
+**OMO multi-agent dispatch:** Treat CI/CD as its own attack surface and scan it in parallel.
+
+```typescript
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 4 CI/CD audit. [GOAL]: Find dangerous workflow triggers and checkout patterns. [REQUEST]: Search workflow files for pull_request_target, checkout of PR refs, and untrusted-input execution paths.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 4 CI/CD audit. [GOAL]: Find unpinned or over-privileged actions. [REQUEST]: Search for third-party actions without SHA pinning, broad permissions, unsafe secrets exposure, and missing CODEOWNERS protection.")
+```
 
 **GitHub Actions analysis:** For each workflow file, check for:
 - Unpinned third-party actions (not SHA-pinned) — use Grep for `uses:` lines missing `@[sha]`
@@ -294,11 +324,17 @@ If approved, run the same Grep patterns on globally installed skill files and ch
 
 **Severity:** CRITICAL for credential exfiltration attempts / prompt injection in skill files. HIGH for suspicious network calls / overly broad tool permissions. MEDIUM for skills from unverified sources without review.
 
-**FP rules:** gstack's own skills are trusted (check if skill path resolves to a known repo). Skills that use `curl` for legitimate purposes (downloading tools, health checks) need context — only flag when the target URL is suspicious or when the command includes credential variables.
+**FP rules:** ohmystack's own skills are trusted (check if skill path resolves to a known repo). Skills that use `curl` for legitimate purposes (downloading tools, health checks) need context — only flag when the target URL is suspicious or when the command includes credential variables.
 
 ### Phase 9: OWASP Top 10 Assessment
 
 For each OWASP category, perform targeted analysis. Use the Grep tool for all searches — scope file extensions to detected stacks from Phase 0.
+
+Before finalizing category findings, use Librarian as the external reference check for OWASP and CWE alignment.
+
+```typescript
+task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 9 OWASP assessment. [GOAL]: Calibrate findings against OWASP Top 10 and CWE references. [REQUEST]: For the candidate issues found, map them to current OWASP Top 10 categories, likely CWE entries, and the baseline exploit expectations for severity/confidence scoring.")
+```
 
 #### A01: Broken Access Control
 - Check for missing auth on controllers/routes (skip_before_action, skip_authorization, public, no_auth)
@@ -355,6 +391,14 @@ See **Phase 4 (CI/CD Pipeline Security)** for pipeline protection analysis.
 ### Phase 10: STRIDE Threat Model
 
 For each major component identified in Phase 0, evaluate:
+
+Use Oracle to pressure-test your STRIDE reasoning before publishing the model.
+
+```typescript
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="[CONTEXT]: CSO Phase 10 STRIDE analysis. Architecture summary: [summary]. Candidate findings: [findings]. [GOAL]: Pressure-test the threat model. [REQUEST]: Identify the highest-risk spoofing, tampering, repudiation, information disclosure, denial-of-service, and elevation-of-privilege paths; challenge weak assumptions; and highlight missing trust boundaries.")
+```
+
+Oracle is the skeptic, not the source of truth. Keep the existing confidence gates: daily mode still requires 8/10 confidence, comprehensive mode still uses the 2/10 bar.
 
 ```
 COMPONENT: [Name]
@@ -427,7 +471,7 @@ Before producing findings, run every candidate through this filter.
 19. Dependency CVEs with CVSS < 4.0 and no known exploit
 20. Docker issues in files named `Dockerfile.dev` or `Dockerfile.local` unless referenced in prod deploy configs
 21. CI/CD findings on archived or disabled workflows
-22. Skill files that are part of gstack itself (trusted source)
+22. Skill files that are part of ohmystack itself (trusted source)
 
 **Precedents:**
 
@@ -521,7 +565,7 @@ For each finding:
 5. **Audit exposure window** — when committed? When removed? Was repo public?
 6. **Check for abuse** — review provider's audit logs
 
-**Trend Tracking:** If prior reports exist in `.gstack/security-reports/`:
+**Trend Tracking:** If prior reports exist in `.ohmystack/security-reports/`:
 ```
 SECURITY POSTURE TREND
 ══════════════════════
@@ -549,10 +593,10 @@ Match findings across reports using the `fingerprint` field (sha256 of category 
 ### Phase 14: Save Report
 
 ```bash
-mkdir -p .gstack/security-reports
+mkdir -p .ohmystack/security-reports
 ```
 
-Write findings to `.gstack/security-reports/{date}-{HHMMSS}.json` using this schema:
+Write findings to `.ohmystack/security-reports/{date}-{HHMMSS}.json` using this schema:
 
 ```json
 {
@@ -605,7 +649,7 @@ Write findings to `.gstack/security-reports/{date}-{HHMMSS}.json` using this sch
 }
 ```
 
-If `.gstack/` is not in `.gitignore`, note it in findings — security reports should stay local.
+If `.ohmystack/` is not in `.gitignore`, note it in findings — security reports should stay local.
 
 {{LEARNINGS_LOG}}
 

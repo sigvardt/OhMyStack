@@ -1,14 +1,14 @@
 {
-  "name": "gstack",
-  "version": "0.16.2.0",
-  "description": "Garry's Stack — Claude Code skills + fast headless browser. One repo, one install, entire AI engineering workflow.",
+  "name": "ohmystack",
+  "version": "1.0.0",
+  "description": "OhMyStack \u2014 Claude Code skills + fast headless browser. One repo, one install, entire AI engineering workflow.",
   "license": "MIT",
   "type": "module",
   "bin": {
     "browse": "./browse/dist/browse"
   },
   "scripts": {
-    "build": "bun run gen:skill-docs --host all; bun build --compile browse/src/cli.ts --outfile browse/dist/browse && bun build --compile browse/src/find-browse.ts --outfile browse/dist/find-browse && bun build --compile design/src/cli.ts --outfile design/dist/design && bun build --compile bin/gstack-global-discover.ts --outfile bin/gstack-global-discover && bash browse/scripts/build-node-server.sh && git rev-parse HEAD > browse/dist/.version && git rev-parse HEAD > design/dist/.version && chmod +x browse/dist/browse browse/dist/find-browse design/dist/design bin/gstack-global-discover && rm -f .*.bun-build || true",
+    "build": "bun run gen:skill-docs; bun build --compile browse/src/cli.ts --outfile browse/dist/browse && bun build --compile browse/src/find-browse.ts --outfile browse/dist/find-browse && bun build --compile design/src/cli.ts --outfile design/dist/design && bun build --compile bin/ohmystack-global-discover.ts --outfile bin/ohmystack-global-discover && bash browse/scripts/build-node-server.sh && git rev-parse HEAD > browse/dist/.version && git rev-parse HEAD > design/dist/.version && chmod +x browse/dist/browse browse/dist/find-browse design/dist/design bin/ohmystack-global-discover && rm -f .*.bun-build || true",
     "dev:design": "bun run design/src/cli.ts",
     "gen:skill-docs": "bun run scripts/gen-skill-docs.ts",
     "dev": "bun run browse/src/cli.ts",
@@ -58,5 +58,9 @@
   ],
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.78.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sigvardt/OhMyStack.git"
   }
 }

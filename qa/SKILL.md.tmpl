@@ -10,7 +10,7 @@ description: |
   Proactively suggest when the user says a feature is ready for testing
   or asks "does this work?". Three tiers: Quick (critical/high only),
   Standard (+ medium), Exhaustive (+ cosmetic). Produces before/after health scores,
-  fix evidence, and a ship-readiness summary. For report-only mode, use /qa-only. (gstack)
+  fix evidence, and a ship-readiness summary. For report-only mode, use /qa-only. (ohmystack)
 voice-triggers:
   - "quality check"
   - "test the app"
@@ -42,8 +42,8 @@ You are a QA engineer AND a bug-fix engineer. Test web applications like a real 
 |-----------|---------|-----------------:|
 | Target URL | (auto-detect or required) | `https://myapp.com`, `http://localhost:3000` |
 | Tier | Standard | `--quick`, `--exhaustive` |
-| Mode | full | `--regression .gstack/qa-reports/baseline.json` |
-| Output dir | `.gstack/qa-reports/` | `Output to /tmp/qa` |
+| Mode | full | `--regression .ohmystack/qa-reports/baseline.json` |
+| Output dir | `.ohmystack/qa-reports/` | `Output to /tmp/qa` |
 | Scope | Full app (or diff-scoped) | `Focus on the billing page` |
 | Auth | None | `Sign in to user@example.com`, `Import cookies from cookies.json` |
 
@@ -89,7 +89,7 @@ After the user chooses, execute their choice (commit or stash), then continue wi
 **Create output directories:**
 
 ```bash
-mkdir -p .gstack/qa-reports/screenshots
+mkdir -p .ohmystack/qa-reports/screenshots
 ```
 
 ---
@@ -100,11 +100,11 @@ mkdir -p .gstack/qa-reports/screenshots
 
 Before falling back to git diff heuristics, check for richer test plan sources:
 
-1. **Project-scoped test plans:** Check `~/.gstack/projects/` for recent `*-test-plan-*.md` files for this repo
+1. **Project-scoped test plans:** Check `~/.ohmystack/projects/` for recent `*-test-plan-*.md` files for this repo
    ```bash
    setopt +o nomatch 2>/dev/null || true  # zsh compat
    {{SLUG_EVAL}}
-   ls -t ~/.gstack/projects/$SLUG/*-test-plan-*.md 2>/dev/null | head -1
+   ls -t ~/.ohmystack/projects/$SLUG/*-test-plan-*.md 2>/dev/null | head -1
    ```
 2. **Conversation context:** Check if a prior `/plan-eng-review` or `/plan-ceo-review` produced test plan output in this conversation
 3. **Use whichever source is richer.** Fall back to git diff analysis only if neither is available.
@@ -115,6 +115,18 @@ Before falling back to git diff heuristics, check for richer test plan sources:
 
 {{QA_METHODOLOGY}}
 
+### Multi-Agent Dispatch: Test Surface Mapping
+
+Before Phase 1 starts, dispatch background mapping agents so the browse-based QA pass has a complete surface map instead of guessing from the landing page alone:
+
+```python
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="TASK: Map the app's test surfaces. Find all user-facing routes/pages, auth gates, nav entry points, forms, interactive widgets, and primary state-changing flows. Return a concise route-by-route checklist with file/path evidence.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="TASK: Enumerate forms and interactive elements worth QA coverage. Find submissions, dialogs, drawers, dropdowns, uploaders, keyboard shortcuts, pagination, filters, and destructive actions. Return repro-oriented coverage notes with selectors or labels when available.")
+task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="TASK: Gather prior QA context from local reports, test plans, and learnings. Summarize known flaky areas, previously broken flows, and high-risk surfaces to prioritize during this QA run.")
+```
+
+Use those agent results to drive the browse test plan. The agents enhance coverage selection; they do NOT replace the real browse-based QA workflow.
+
 Record baseline health score at end of Phase 6.
 
 ---
@@ -122,7 +134,7 @@ Record baseline health score at end of Phase 6.
 ## Output Structure
 
 ```
-.gstack/qa-reports/
+.ohmystack/qa-reports/
 ├── qa-report-{domain}-{YYYY-MM-DD}.md    # Structured report
 ├── screenshots/
 │   ├── initial.png                        # Landing page annotated screenshot
@@ -164,11 +176,27 @@ For each fixable issue, in severity order:
 - Find the source file(s) responsible for the bug
 - ONLY modify files directly related to the issue
 
+If the root cause is still unclear after two focused fix attempts, stop guessing and dispatch Oracle before attempt three:
+
+```python
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="TASK: Root-cause consultation for QA bug. BUG: [bug]. FILES ALREADY CHECKED: [paths]. FAILED FIX ATTEMPTS: [1..2 summary]. BROWSE EVIDENCE: [console/screenshot/snapshot]. Return the most likely root cause, risky assumptions, and the narrowest next fix to try.")
+```
+
+Use Oracle to sharpen the next attempt; continue the same atomic fix → commit → re-verify loop after the consultation.
+
 ### 8b. Fix
 
 - Read the source code, understand the context
 - Make the **minimal fix** — smallest change that resolves the issue
 - Do NOT refactor surrounding code, add features, or "improve" unrelated things
+
+For each bug found, dispatch a dedicated fix agent instead of batching fixes in the main thread:
+
+```python
+task(category="quick", load_skills=[], run_in_background=false, prompt="TASK: Fix [bug]. FILE: [path]. ROOT CAUSE: [cause]. FIX: [specific change]. MUST: commit atomically, re-verify with browse.")
+```
+
+This dispatch is per-bug, per-commit. One bug in, one fix commit out, then re-verify before moving to the next issue.
 
 ### 8c. Commit
 
@@ -227,7 +255,7 @@ The test MUST:
   ```
   // Regression: ISSUE-NNN — {what broke}
   // Found by /qa on {YYYY-MM-DD}
-  // Report: .gstack/qa-reports/qa-report-{domain}-{date}.md
+  // Report: .ohmystack/qa-reports/qa-report-{domain}-{date}.md
   ```
 
 Test type decision:
@@ -287,13 +315,13 @@ After all fixes are applied:
 
 Write the report to both local and project-scoped locations:
 
-**Local:** `.gstack/qa-reports/qa-report-{domain}-{YYYY-MM-DD}.md`
+**Local:** `.ohmystack/qa-reports/qa-report-{domain}-{YYYY-MM-DD}.md`
 
 **Project-scoped:** Write test outcome artifact for cross-session context:
 ```bash
 {{SLUG_SETUP}}
 ```
-Write to `~/.gstack/projects/{slug}/{user}-{branch}-test-outcome-{datetime}.md`
+Write to `~/.ohmystack/projects/{slug}/{user}-{branch}-test-outcome-{datetime}.md`
 
 **Per-issue additions** (beyond standard report template):
 - Fix Status: verified / best-effort / reverted / deferred

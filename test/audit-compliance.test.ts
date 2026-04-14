@@ -32,17 +32,12 @@ describe('Audit compliance', () => {
   });
 
   // Fix 2: Conditional telemetry — binary calls wrapped with existence check
-  test('preamble telemetry calls are conditional on _TEL and binary existence', () => {
+  test('preamble telemetry stays local and conditional on _TEL', () => {
     const preamble = readFileSync(join(ROOT, 'scripts/resolvers/preamble.ts'), 'utf-8');
-    // Pending finalization must check _TEL and binary existence
+    // OhMyStack keeps telemetry local-only; no remote telemetry binary should be invoked.
     expect(preamble).toContain('_TEL" != "off"');
-    expect(preamble).toContain('-x ');
-    expect(preamble).toContain('gstack-telemetry-log');
-    // End-of-skill telemetry must also be conditional
-    const completionIdx = preamble.indexOf('Telemetry (run last)');
-    expect(completionIdx).toBeGreaterThan(-1);
-    const completionSection = preamble.slice(completionIdx);
-    expect(completionSection).toContain('_TEL" != "off"');
+    expect(preamble).toContain('skill-usage.jsonl');
+    expect(preamble).not.toContain('ohmystack-telemetry-log');
   });
 
   // Round 2 Fix 1: W012 — Bun install uses checksum verification
@@ -104,10 +99,10 @@ describe('Audit compliance', () => {
   });
 
   // Fix 2+6: All generated SKILL.md files with telemetry are conditional
-  test('all generated SKILL.md files with telemetry calls use conditional pattern', () => {
+  test('all generated SKILL.md files with local telemetry use conditional pattern', () => {
     const skills = getAllSkillMds();
     for (const { name, content } of skills) {
-      if (content.includes('gstack-telemetry-log')) {
+      if (content.includes('skill-usage.jsonl') && content.includes('~/.ohmystack/analytics')) {
         expect(content).toContain('_TEL" != "off"');
       }
     }

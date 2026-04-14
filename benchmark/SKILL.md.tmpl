@@ -7,7 +7,7 @@ description: |
   baselines for page load times, Core Web Vitals, and resource sizes.
   Compares before/after on every PR. Tracks performance trends over time.
   Use when: "performance", "benchmark", "page speed", "lighthouse", "web vitals",
-  "bundle size", "load time". (gstack)
+  "bundle size", "load time". (ohmystack)
 voice-triggers:
   - "speed test"
   - "check performance"
@@ -45,14 +45,24 @@ When the user types `/benchmark`, run this skill.
 ### Phase 1: Setup
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null || echo "SLUG=unknown")"
-mkdir -p .gstack/benchmark-reports
-mkdir -p .gstack/benchmark-reports/baselines
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null || echo "SLUG=unknown")"
+mkdir -p .ohmystack/benchmark-reports
+mkdir -p .ohmystack/benchmark-reports/baselines
 ```
 
 ### Phase 2: Page Discovery
 
 Same as /canary — auto-discover from navigation or use `--pages`.
+
+Before collecting metrics, dispatch background agents to improve coverage and analysis quality:
+
+```python
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="TASK: Find performance-critical paths in the codebase. Map landing pages, dashboard/home paths, search/filter flows, heavy data tables, image-heavy pages, auth redirects, and API-backed user journeys likely to dominate performance perception. Return a prioritized page list with evidence.")
+task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="TASK: Gather current Core Web Vitals thresholds, common performance budgets, and industry benchmark ranges relevant to this app type. Return concise reference thresholds for FCP, LCP, TTFB, JS bundle size, CSS size, request count, and transfer size.")
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="TASK: Prepare a performance-analysis rubric for this benchmark run. Using the app context and any known baseline, define how to distinguish true regressions from normal variance/noise, and what patterns usually indicate code issues vs network noise.")
+```
+
+Use these dispatches to refine which pages you benchmark and how you interpret the data. They enhance the core measurement workflow; they do NOT replace actual `browse perf` collection.
 
 If `--diff` mode:
 ```bash
@@ -128,11 +138,17 @@ Save metrics to baseline file:
 }
 ```
 
-Write to `.gstack/benchmark-reports/baselines/baseline.json`.
+Write to `.ohmystack/benchmark-reports/baselines/baseline.json`.
 
 ### Phase 5: Comparison
 
 If baseline exists, compare current metrics against it:
+
+When the deltas are ambiguous, ask Oracle to classify likely regressions vs noise before finalizing the report:
+
+```python
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="TASK: Analyze benchmark deltas. BASELINE: [metrics]. CURRENT: [metrics]. PAGE TYPE: [page]. Determine which changes are likely real regressions, which are probably noise/variance, and the strongest hypotheses for each material change.")
+```
 
 ```
 PERFORMANCE REPORT — [url]
@@ -190,6 +206,8 @@ RECOMMENDATIONS:
 
 Check against industry budgets:
 
+Use the Librarian results to calibrate the budget table and cite which thresholds came from industry references vs project-specific baselines.
+
 ```
 PERFORMANCE BUDGET CHECK
 ════════════════════════
@@ -225,7 +243,7 @@ TREND: Performance degrading. LCP doubled in 8 days.
 
 ### Phase 9: Save Report
 
-Write to `.gstack/benchmark-reports/{date}-benchmark.md` and `.gstack/benchmark-reports/{date}-benchmark.json`.
+Write to `.ohmystack/benchmark-reports/{date}-benchmark.md` and `.ohmystack/benchmark-reports/{date}-benchmark.json`.
 
 ## Important Rules
 

@@ -3,8 +3,8 @@ node_modules/
 dist/
 browse/dist/
 design/dist/
-bin/gstack-global-discover
-.gstack/
+bin/ohmystack-global-discover
+.ohmystack/
 .claude/skills/
 .agents/
 .factory/
@@ -15,7 +15,7 @@ bin/gstack-global-discover
 .openclaw/
 .context/
 extension/.auth.json
-.gstack-worktrees/
+.ohmystack-worktrees/
 /tmp/
 *.log
 *.bun-build
@@ -24,3 +24,4 @@ extension/.auth.json
 .env.*
 !.env.example
 supabase/.temp/
+.sisyphus/

@@ -1,11 +1,12 @@
 import type { TemplateContext } from './types';
+import { getHostConfig } from '../../hosts/index';
 
 export function generateSlugEval(ctx: TemplateContext): string {
-  return `eval "$(${ctx.paths.binDir}/gstack-slug 2>/dev/null)"`;
+  return `eval "$(${ctx.paths.binDir}/ohmystack-slug 2>/dev/null)"`;
 }
 
 export function generateSlugSetup(ctx: TemplateContext): string {
-  return `eval "$(${ctx.paths.binDir}/gstack-slug 2>/dev/null)" && mkdir -p ~/.gstack/projects/$SLUG`;
+  return `eval "$(${ctx.paths.binDir}/ohmystack-slug 2>/dev/null)" && mkdir -p ~/.ohmystack/projects/$SLUG`;
 }
 
 export function generateBaseBranchDetect(_ctx: TemplateContext): string {
@@ -367,7 +368,6 @@ Minimum 0 per category.
 }
 
 export function generateCoAuthorTrailer(ctx: TemplateContext): string {
-  const { getHostConfig } = require('../../hosts/index');
   const hostConfig = getHostConfig(ctx.host);
   return hostConfig.coAuthorTrailer || 'Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>';
 }

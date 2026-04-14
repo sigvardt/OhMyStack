@@ -6,7 +6,7 @@ description: |
   Pre-landing PR review. Analyzes diff against the base branch for SQL safety, LLM trust
   boundary violations, conditional side effects, and other structural issues. Use when
   asked to "review this PR", "code review", "pre-landing review", or "check my diff".
-  Proactively suggest when the user is about to merge or land code changes. (gstack)
+  Proactively suggest when the user is about to merge or land code changes. (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -90,6 +90,44 @@ Also apply the remaining INFORMATIONAL categories that are still in the checklis
 Takes seconds, prevents recommending outdated patterns. If WebSearch is unavailable, note it and proceed with in-distribution knowledge.
 
 Follow the output format specified in the checklist. Respect the suppressions — do NOT flag items listed in the "DO NOT flag" section.
+
+### Step 4.1: OMO multi-agent dispatch
+
+Before writing findings, dispatch background specialists so the main skill can orchestrate one unified verdict:
+
+1. **Oracle structural review** — launch:
+   ```
+   task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="Review the diff against origin/<base>. Focus on SQL safety, LLM trust boundaries, conditional side effects, race conditions, shell injection, enum/value completeness, and any structural correctness issues that tests may miss. Return findings with severity, file:line evidence, and an APPROVE/REJECT recommendation.")
+   ```
+
+2. **Momus adversarial critique** — launch:
+   ```
+   task(subagent_type="momus", run_in_background=true, load_skills=[], prompt="Adversarially critique this branch diff against origin/<base>. Assume the implementation is hiding brittle assumptions. Try to break the plan in production: edge cases, abuse cases, rollback hazards, bad incentives, silent corruption, and coordination failures. Return only concrete risks with evidence plus a ship/no-ship recommendation.")
+   ```
+
+3. **Explore impact scan** — launch:
+   ```
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Scan the repo for code outside the diff that could be affected by these changes. Prioritize sibling enum handlers, auth/trust-boundary code, SQL/query call sites, side-effectful jobs, and other consumers of touched interfaces. Return the most relevant files, why they matter, and any missed handling paths.")
+   ```
+
+4. Continue your own diff review while the agents run. Do **not** wait idly and do **not** duplicate their searches. When all three complete, merge their evidence into the normal checklist flow.
+
+### Step 4.2: Unified verdict synthesis
+
+Produce one final verdict for the branch using **all** review inputs: your checklist review, Oracle, Momus, Explore, and Greptile classifications if present.
+
+- **APPROVE** only if no unresolved critical issues remain and no dispatched specialist returns a substantiated REJECT.
+- **REJECT** if any unresolved critical issue remains, or if Oracle/Momus surfaces a concrete ship blocker you cannot clear with evidence.
+- If specialists disagree, show the disagreement explicitly, resolve it with repo evidence, and then issue one final branch verdict.
+
+Output header format:
+
+```
+VERDICT: APPROVE | REJECT
+STRUCTURAL REVIEW: <summary of Oracle>
+ADVERSARIAL REVIEW: <summary of Momus>
+IMPACT SCAN: <summary of Explore>
+```
 
 {{CONFIDENCE_CALIBRATION}}
 
@@ -229,7 +267,7 @@ recognize that Eng Review was run on this branch.
 Run:
 
 ```bash
-~/.claude/skills/gstack/bin/gstack-review-log '{"skill":"review","timestamp":"TIMESTAMP","status":"STATUS","issues_found":N,"critical":N,"informational":N,"quality_score":SCORE,"specialists":SPECIALISTS_JSON,"findings":FINDINGS_JSON,"commit":"COMMIT"}'
+~/.claude/skills/ohmystack/bin/ohmystack-review-log '{"skill":"review","timestamp":"TIMESTAMP","status":"STATUS","issues_found":N,"critical":N,"informational":N,"quality_score":SCORE,"specialists":SPECIALISTS_JSON,"findings":FINDINGS_JSON,"commit":"COMMIT"}'
 ```
 
 Substitute:

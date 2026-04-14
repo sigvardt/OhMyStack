@@ -7,12 +7,13 @@ description: |
   performance regressions, and page failures using the browse daemon. Takes
   periodic screenshots, compares against pre-deploy baselines, and alerts
   on anomalies. Use when: "monitor deploy", "canary", "post-deploy check",
-  "watch production", "verify deploy". (gstack)
+  "watch production", "verify deploy". (ohmystack)
 allowed-tools:
   - Bash
   - Read
   - Write
   - Glob
+  - Agent
   - AskUserQuestion
 ---
 
@@ -43,10 +44,10 @@ When the user types `/canary`, run this skill.
 ### Phase 1: Setup
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null || echo "SLUG=unknown")"
-mkdir -p .gstack/canary-reports
-mkdir -p .gstack/canary-reports/baselines
-mkdir -p .gstack/canary-reports/screenshots
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null || echo "SLUG=unknown")"
+mkdir -p .ohmystack/canary-reports
+mkdir -p .ohmystack/canary-reports/baselines
+mkdir -p .ohmystack/canary-reports/screenshots
 ```
 
 Parse the user's arguments. Default duration is 10 minutes. Default pages: auto-discover from the app's navigation.
@@ -59,7 +60,7 @@ For each page (either from `--pages` or the homepage):
 
 ```bash
 $B goto <page-url>
-$B snapshot -i -a -o ".gstack/canary-reports/baselines/<page-name>.png"
+$B snapshot -i -a -o ".ohmystack/canary-reports/baselines/<page-name>.png"
 $B console --errors
 $B perf
 $B text
@@ -67,7 +68,7 @@ $B text
 
 Collect for each page: screenshot path, console error count, page load time from `perf`, and a text content snapshot.
 
-Save the baseline manifest to `.gstack/canary-reports/baseline.json`:
+Save the baseline manifest to `.ohmystack/canary-reports/baseline.json`:
 
 ```json
 {
@@ -113,7 +114,7 @@ For each page to monitor:
 
 ```bash
 $B goto <page-url>
-$B snapshot -i -a -o ".gstack/canary-reports/screenshots/pre-<page-name>.png"
+$B snapshot -i -a -o ".ohmystack/canary-reports/screenshots/pre-<page-name>.png"
 $B console --errors
 $B perf
 ```
@@ -126,10 +127,20 @@ Monitor for the specified duration. Every 60 seconds, check each page:
 
 ```bash
 $B goto <page-url>
-$B snapshot -i -a -o ".gstack/canary-reports/screenshots/<page-name>-<check-number>.png"
+$B snapshot -i -a -o ".ohmystack/canary-reports/screenshots/<page-name>-<check-number>.png"
 $B console --errors
 $B perf
 ```
+
+Launch parallel monitoring agents so different health dimensions are watched independently throughout the canary window:
+
+```typescript
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Monitor console errors on [URL]. Take periodic screenshots. Report anomalies.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Monitor performance metrics on [URL]. Compare against pre-deploy baseline.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Monitor screenshot/content drift and broken-page symptoms on [URL] across the selected pages. Report visual regressions, blank states, and new 404-like behavior.")
+```
+
+Let these run in parallel with the foreground loop. Aggregate their evidence into the per-check alert evaluation rather than duplicating the same manual observations.
 
 After each check, compare results against the baseline (or pre-deploy snapshot):
 
@@ -163,6 +174,14 @@ Current:  [current value]
 - C) Rollback — revert the deploy immediately
 - D) Dismiss — false positive, continue monitoring
 
+When an alert persists or the evidence is ambiguous, launch Oracle before presenting the recommendation:
+
+```typescript
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="Analyze this canary anomaly set for [URL]: [alerts, screenshots, console output, perf deltas]. Determine severity, likely root cause class, and whether the issue looks transient or deploy-induced.")
+```
+
+Use the Oracle result to calibrate the recommendation and distinguish real regressions from noisy warm-up effects.
+
 ### Phase 6: Health Report
 
 After monitoring completes (or if the user stops early), produce a summary:
@@ -183,18 +202,18 @@ Per-Page Results:
   /settings       HEALTHY     0         380ms
 
 Alerts Fired:  [N] (X critical, Y high, Z medium)
-Screenshots:   .gstack/canary-reports/screenshots/
+Screenshots:   .ohmystack/canary-reports/screenshots/
 
 VERDICT: [DEPLOY IS HEALTHY / DEPLOY HAS ISSUES — details above]
 ```
 
-Save report to `.gstack/canary-reports/{date}-canary.md` and `.gstack/canary-reports/{date}-canary.json`.
+Save report to `.ohmystack/canary-reports/{date}-canary.md` and `.ohmystack/canary-reports/{date}-canary.json`.
 
 Log the result for the review dashboard:
 
 ```bash
 {{SLUG_EVAL}}
-mkdir -p ~/.gstack/projects/$SLUG
+mkdir -p ~/.ohmystack/projects/$SLUG
 ```
 
 Write a JSONL entry: `{"skill":"canary","timestamp":"<ISO>","status":"<HEALTHY/DEGRADED/BROKEN>","url":"<url>","duration_min":<N>,"alerts":<N>}`

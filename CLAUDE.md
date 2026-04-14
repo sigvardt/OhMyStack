@@ -1,4 +1,4 @@
-# gstack development
+# OhMyStack development
 
 ## Commands
 
@@ -17,7 +17,7 @@ bun run build        # gen docs + compile binaries
 bun run gen:skill-docs  # regenerate SKILL.md files from templates
 bun run skill:check  # health dashboard for all skills
 bun run dev:skill    # watch mode: auto-regen + validate on change
-bun run eval:list    # list all eval runs from ~/.gstack-dev/evals/
+bun run eval:list    # list all eval runs from ~/.ohmystack-dev/evals/
 bun run eval:compare # compare two eval runs (auto-picks most recent)
 bun run eval:summary # aggregate stats across all eval runs
 bun run slop          # full slop-scan report (all files)
@@ -27,7 +27,7 @@ bun run slop:diff     # slop findings in files changed on this branch only
 `test:evals` requires `ANTHROPIC_API_KEY`. Codex E2E tests (`test/codex-e2e.test.ts`)
 use Codex's own auth from `~/.codex/` config — no `OPENAI_API_KEY` env var needed.
 E2E tests stream progress in real-time (tool-by-tool via `--output-format stream-json
---verbose`). Results are persisted to `~/.gstack-dev/evals/` with auto-comparison
+--verbose`). Results are persisted to `~/.ohmystack-dev/evals/` with auto-comparison
 against the previous run.
 
 **Diff-based test selection:** `test:evals` and `test:e2e` auto-select tests based
@@ -58,7 +58,7 @@ tests via `claude -p`. Both must pass before creating a PR.
 ## Project structure
 
 ```
-gstack/
+ohmystack/
 ├── browse/          # Headless browser CLI (Playwright)
 │   ├── src/         # CLI + server + commands
 │   │   ├── commands.ts  # Command registry (single source of truth)
@@ -100,13 +100,13 @@ gstack/
 ├── office-hours/    # /office-hours skill (YC Office Hours — startup diagnostic + builder brainstorm)
 ├── investigate/     # /investigate skill (systematic root-cause debugging)
 ├── retro/           # Retrospective skill (includes /retro global cross-project mode)
-├── bin/             # CLI utilities (gstack-repo-mode, gstack-slug, gstack-config, etc.)
+├── bin/             # CLI utilities (ohmystack-repo-mode, ohmystack-slug, ohmystack-config, etc.)
 ├── document-release/ # /document-release skill (post-ship doc updates)
 ├── cso/             # /cso skill (OWASP Top 10 + STRIDE security audit)
 ├── design-consultation/ # /design-consultation skill (design system from scratch)
 ├── design-shotgun/  # /design-shotgun skill (visual design exploration)
-├── open-gstack-browser/  # /open-gstack-browser skill (launch GStack Browser)
-├── connect-chrome/  # symlink → open-gstack-browser (backwards compat)
+├── open-ohmystack-browser/  # /open-ohmystack-browser skill (launch OhMyStack Browser)
+├── connect-chrome/  # symlink → open-ohmystack-browser (backwards compat)
 ├── design/          # Design binary CLI (GPT Image API)
 │   ├── src/         # CLI + commands (generate, variants, compare, serve, etc.)
 │   ├── test/        # Integration tests
@@ -119,7 +119,7 @@ gstack/
 │   ├── workflows/   # evals.yml (E2E on Ubicloud), skill-docs.yml, actionlint.yml
 │   └── docker/      # Dockerfile.ci (pre-baked toolchain + Playwright/Chromium)
 ├── contrib/         # Contributor-only tools (never installed for users)
-│   └── add-host/    # /gstack-contrib-add-host skill
+│   └── add-host/    # /ohmystack-contrib-add-host skill
 ├── setup            # One-time setup: build binary + symlink skills
 ├── SKILL.md         # Generated from SKILL.md.tmpl (don't edit directly)
 ├── SKILL.md.tmpl    # Template: edit this, run gen:skill-docs
@@ -150,11 +150,11 @@ Skills must NEVER hardcode framework-specific commands, file patterns, or direct
 structures. Instead:
 
 1. **Read CLAUDE.md** for project-specific config (test commands, eval commands, etc.)
-2. **If missing, AskUserQuestion** — let the user tell you or let gstack search the repo
+2. **If missing, AskUserQuestion** — let the user tell you or let ohmystack search the repo
 3. **Persist the answer to CLAUDE.md** so we never have to ask again
 
 This applies to test commands, eval commands, deploy commands, and any other
-project-specific behavior. The project owns its config; gstack reads it.
+project-specific behavior. The project owns its config; ohmystack reads it.
 
 ## Writing SKILL templates
 
@@ -190,37 +190,37 @@ silent failures that come from not understanding the cross-component flow.
 
 ## Dev symlink awareness
 
-When developing gstack, `.claude/skills/gstack` may be a symlink back to this
+When developing ohmystack, `.claude/skills/ohmystack` may be a symlink back to this
 working directory (gitignored). This means skill changes are **live immediately**,
 great for rapid iteration, risky during big refactors where half-written skills
-could break other Claude Code sessions using gstack concurrently.
+could break other Claude Code sessions using ohmystack concurrently.
 
-**Check once per session:** Run `ls -la .claude/skills/gstack` to see if it's a
+**Check once per session:** Run `ls -la .claude/skills/ohmystack` to see if it's a
 symlink or a real copy. If it's a symlink to your working directory, be aware that:
-- Template changes + `bun run gen:skill-docs` immediately affect all gstack invocations
-- Breaking changes to SKILL.md.tmpl files can break concurrent gstack sessions
-- During large refactors, remove the symlink (`rm .claude/skills/gstack`) so the
-  global install at `~/.claude/skills/gstack/` is used instead
+- Template changes + `bun run gen:skill-docs` immediately affect all ohmystack invocations
+- Breaking changes to SKILL.md.tmpl files can break concurrent ohmystack sessions
+- During large refactors, remove the symlink (`rm .claude/skills/ohmystack`) so the
+  global install at `~/.claude/skills/ohmystack/` is used instead
 
 **Prefix setting:** Setup creates real directories (not symlinks) at the top level
-with a SKILL.md symlink inside (e.g., `qa/SKILL.md -> gstack/qa/SKILL.md`). This
-ensures Claude discovers them as top-level skills, not nested under `gstack/`.
-Names are either short (`qa`) or namespaced (`gstack-qa`), controlled by
-`skill_prefix` in `~/.gstack/config.yaml`. Pass `--no-prefix` or `--prefix` to
+with a SKILL.md symlink inside (e.g., `qa/SKILL.md -> ohmystack/qa/SKILL.md`). This
+ensures Claude discovers them as top-level skills, not nested under `ohmystack/`.
+Names are either short (`qa`) or namespaced (`ohmystack-qa`), controlled by
+`skill_prefix` in `~/.ohmystack/config.yaml`. Pass `--no-prefix` or `--prefix` to
 skip the interactive prompt.
 
-**Note:** Vendoring gstack into a project's repo is deprecated. Use global install
+**Note:** Vendoring ohmystack into a project's repo is deprecated. Use global install
 + `./setup --team` instead. See README.md for team mode instructions.
 
 **For plan reviews:** When reviewing plans that modify skill templates or the
 gen-skill-docs pipeline, consider whether the changes should be tested in isolation
-before going live (especially if the user is actively using gstack in other windows).
+before going live (especially if the user is actively using ohmystack in other windows).
 
 **Upgrade migrations:** When a change modifies on-disk state (directory structure,
 config format, stale files) in ways that could break existing user installs, add a
-migration script to `gstack-upgrade/migrations/`. Read CONTRIBUTING.md's "Upgrade
+migration script to `ohmystack-upgrade/migrations/`. Read CONTRIBUTING.md's "Upgrade
 migrations" section for the format and testing requirements. The upgrade skill runs
-these automatically after `./setup` during `/gstack-upgrade`.
+these automatically after `./setup` during `/ohmystack-upgrade`.
 
 ## Compiled binaries — NEVER commit browse/dist/ or design/dist/
 
@@ -375,9 +375,9 @@ CHANGELOG.md is **for users**, not contributors. Write it like product release n
 
 ## AI effort compression
 
-When estimating or discussing effort, always show both human-team and CC+gstack time:
+When estimating or discussing effort, always show both human-team and CC+ohmystack time:
 
-| Task type | Human team | CC+gstack | Compression |
+| Task type | Human team | CC+ohmystack | Compression |
 |-----------|-----------|-----------|-------------|
 | Boilerplate / scaffolding | 2 days | 15 min | ~100x |
 | Test writing | 1 day | 15 min | ~50x |
@@ -405,7 +405,7 @@ builder philosophy.
 
 ## Local plans
 
-Contributors can store long-range vision docs and design documents in `~/.gstack-dev/plans/`.
+Contributors can store long-range vision docs and design documents in `~/.ohmystack-dev/plans/`.
 These are local-only (not checked in). When reviewing TODOS.md, check `plans/` for candidates
 that may be ready to promote to TODOs or implement.
 
@@ -463,35 +463,35 @@ Also when running targeted E2E tests to debug failures:
 
 ## Publishing native OpenClaw skills to ClawHub
 
-Native OpenClaw skills live in `openclaw/skills/gstack-openclaw-*/SKILL.md`. These are
+Native OpenClaw skills live in `openclaw/skills/ohmystack-openclaw-*/SKILL.md`. These are
 hand-crafted methodology skills (not generated by the pipeline) published to ClawHub
 so any OpenClaw user can install them.
 
 **Publishing:** The command is `clawhub publish` (NOT `clawhub skill publish`):
 
 ```bash
-clawhub publish openclaw/skills/gstack-openclaw-office-hours \
-  --slug gstack-openclaw-office-hours --name "gstack Office Hours" \
+clawhub publish openclaw/skills/ohmystack-openclaw-office-hours \
+  --slug ohmystack-openclaw-office-hours --name "ohmystack Office Hours" \
   --version 1.0.0 --changelog "description of changes"
 ```
 
-Repeat for each skill: `gstack-openclaw-ceo-review`, `gstack-openclaw-investigate`,
-`gstack-openclaw-retro`. Bump `--version` on each update.
+Repeat for each skill: `ohmystack-openclaw-ceo-review`, `ohmystack-openclaw-investigate`,
+`ohmystack-openclaw-retro`. Bump `--version` on each update.
 
 **Auth:** `clawhub login` (opens browser for GitHub auth). `clawhub whoami` to verify.
 
 **Updating:** Same `clawhub publish` command with a higher `--version` and `--changelog`.
 
-**Verification:** `clawhub search gstack` to confirm they're live.
+**Verification:** `clawhub search ohmystack` to confirm they're live.
 
 ## Deploying to the active skill
 
-The active skill lives at `~/.claude/skills/gstack/`. After making changes:
+The active skill lives at `~/.claude/skills/ohmystack/`. After making changes:
 
 1. Push your branch
-2. Fetch and reset in the skill directory: `cd ~/.claude/skills/gstack && git fetch origin && git reset --hard origin/main`
-3. Rebuild: `cd ~/.claude/skills/gstack && bun run build`
+2. Fetch and reset in the skill directory: `cd ~/.claude/skills/ohmystack && git fetch origin && git reset --hard origin/main`
+3. Rebuild: `cd ~/.claude/skills/ohmystack && bun run build`
 
 Or copy the binaries directly:
-- `cp browse/dist/browse ~/.claude/skills/gstack/browse/dist/browse`
-- `cp design/dist/design ~/.claude/skills/gstack/design/dist/design`
+- `cp browse/dist/browse ~/.claude/skills/ohmystack/browse/dist/browse`
+- `cp design/dist/design ~/.claude/skills/ohmystack/design/dist/design`

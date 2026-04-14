@@ -8,7 +8,7 @@ description: |
   run anytime. Use when: "explore designs", "show me options", "design variants",
   "visual brainstorm", or "I don't like how this looks".
   Proactively suggest when the user describes a UI feature but hasn't seen
-  what it could look like. (gstack)
+  what it could look like. (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -33,9 +33,9 @@ visual brainstorming, not a review process.
 Check for prior design exploration sessions for this project:
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
 setopt +o nomatch 2>/dev/null || true
-_PREV=$(find ~/.gstack/projects/$SLUG/designs/ -name "approved.json" -maxdepth 2 2>/dev/null | sort -r | head -5)
+_PREV=$(find ~/.ohmystack/projects/$SLUG/designs/ -name "approved.json" -maxdepth 2 2>/dev/null | sort -r | head -5)
 [ -n "$_PREV" ] && echo "PREVIOUS_SESSIONS_FOUND" || echo "NO_PREVIOUS_SESSIONS"
 echo "$_PREV"
 ```
@@ -87,7 +87,7 @@ ls src/ app/ pages/ components/ 2>/dev/null | head -30
 
 ```bash
 setopt +o nomatch 2>/dev/null || true
-ls ~/.gstack/projects/$SLUG/*office-hours* 2>/dev/null | head -5
+ls ~/.ohmystack/projects/$SLUG/*office-hours* 2>/dev/null | head -5
 ```
 
 If DESIGN.md exists, tell the user: "I'll follow your design system in DESIGN.md by
@@ -114,13 +114,34 @@ covering all gaps:
 
 Two rounds max of context gathering, then proceed with what you have and note assumptions.
 
+### OMO multi-agent dispatch during context + generation
+
+Once you know the screen and audience, dispatch supporting specialists so the variant generator has stronger inputs:
+
+1. **Librarian inspiration scan**
+   ```
+   task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="Research relevant design inspiration and current visual trends for this product category and screen type. Return references, recurring motifs, overused clichés, and a few fresh directions worth exploring.")
+   ```
+
+2. **Explore token + pattern scan**
+   ```
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Inspect the project for existing design tokens, component patterns, page shells, layout conventions, and prior approved designs that should inform new variants. Return concrete file paths, token names, and any constraints the new variants should respect.")
+   ```
+
+3. **Momus differentiation critique**
+   ```
+   task(subagent_type="momus", run_in_background=true, load_skills=[], prompt="Critique the emerging variant concepts adversarially. Flag concepts that are too generic, trend-chasing, inconsistent with the product, or likely to produce AI-slop. Push the concepts toward clearer differentiation and more intentional tradeoffs.")
+   ```
+
+The main skill still owns the comparison board, structured feedback loop, and iteration decisions.
+
 ## Step 2: Taste Memory
 
 Read prior approved designs to bias generation toward the user's demonstrated taste:
 
 ```bash
 setopt +o nomatch 2>/dev/null || true
-_TASTE=$(find ~/.gstack/projects/$SLUG/designs/ -name "approved.json" -maxdepth 2 2>/dev/null | sort -r | head -10)
+_TASTE=$(find ~/.ohmystack/projects/$SLUG/designs/ -name "approved.json" -maxdepth 2 2>/dev/null | sort -r | head -10)
 ```
 
 If prior sessions exist, read each `approved.json` and extract patterns from the
@@ -132,13 +153,15 @@ unless the user explicitly requests a different direction."
 
 Limit to last 10 sessions. Try/catch JSON parse on each (skip corrupted files).
 
+Blend the taste-memory summary with the Explore scan so existing project tokens/patterns and previously approved taste pull in the same direction.
+
 ## Step 3: Generate Variants
 
 Set up the output directory:
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-_DESIGN_DIR=~/.gstack/projects/$SLUG/designs/<screen-name>-$(date +%Y%m%d)
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+_DESIGN_DIR=~/.ohmystack/projects/$SLUG/designs/<screen-name>-$(date +%Y%m%d)
 mkdir -p "$_DESIGN_DIR"
 echo "DESIGN_DIR: $_DESIGN_DIR"
 ```
@@ -160,6 +183,7 @@ C) "Name" — one-line visual description of this direction
 ```
 
 Draw on DESIGN.md, taste memory, and the user's request to make each concept distinct.
+Also fold in the Librarian inspiration scan and Momus critique so each concept is both grounded and meaningfully differentiated.
 
 ### Step 3b: Concept Confirmation
 
@@ -190,6 +214,11 @@ $B screenshot "$_DESIGN_DIR/current.png"
 **Launch N Agent subagents in a single message** (parallel execution). Use the Agent
 tool with `subagent_type: "general-purpose"` for each variant. Each agent is independent
 and handles its own generation, quality check, verification, and retry.
+
+Before launching the variant generators, do a final brief pass:
+- Use **Librarian** results to enrich references and trend awareness.
+- Use **Explore** results to inject real project tokens/components into the briefs.
+- Use **Momus** results to remove concepts that feel generic, contradictory, or too close together.
 
 **Important: $D path propagation.** The `$D` variable from DESIGN SETUP is a shell
 variable that agents do NOT inherit. Substitute the resolved absolute path (from the
@@ -225,7 +254,7 @@ For the evolve path, replace step 1 with:
 {$D path} evolve --screenshot {_DESIGN_DIR}/current.png --brief "{brief}" --output /tmp/variant-{letter}.png
 ```
 
-**Why /tmp/ then cp?** In observed sessions, `$D generate --output ~/.gstack/...`
+**Why /tmp/ then cp?** In observed sessions, `$D generate --output ~/.ohmystack/...`
 failed with "The operation was aborted" while `--output /tmp/...` succeeded. This is
 a sandbox restriction. Always generate to `/tmp/` first, then `cp`.
 
@@ -290,7 +319,7 @@ If standalone, offer next steps via AskUserQuestion:
 ## Important Rules
 
 1. **Never save to `.context/`, `docs/designs/`, or `/tmp/`.** All design artifacts go
-   to `~/.gstack/projects/$SLUG/designs/`. This is enforced. See DESIGN_SETUP above.
+   to `~/.ohmystack/projects/$SLUG/designs/`. This is enforced. See DESIGN_SETUP above.
 2. **Show variants inline before opening the board.** The user should see designs
    immediately in their terminal. The browser board is for detailed feedback.
 3. **Confirm feedback before saving.** Always summarize what you understood and verify.

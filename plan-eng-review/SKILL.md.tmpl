@@ -8,7 +8,7 @@ description: |
   issues interactively with opinionated recommendations. Use when asked to
   "review the architecture", "engineering review", or "lock in the plan".
   Proactively suggest when the user has a plan or design doc and is about to
-  start coding — to catch architecture issues before implementation. (gstack)
+  start coding — to catch architecture issues before implementation. (ohmystack)
 voice-triggers:
   - "tech review"
   - "technical review"
@@ -73,13 +73,44 @@ When evaluating architecture, think "boring by default." When reviewing tests, t
 ### Design Doc Check
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
-SLUG=$(~/.claude/skills/gstack/browse/bin/remote-slug 2>/dev/null || basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
+SLUG=$(~/.claude/skills/ohmystack/browse/bin/remote-slug 2>/dev/null || basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null | tr '/' '-' || echo 'no-branch')
-DESIGN=$(ls -t ~/.gstack/projects/$SLUG/*-$BRANCH-design-*.md 2>/dev/null | head -1)
-[ -z "$DESIGN" ] && DESIGN=$(ls -t ~/.gstack/projects/$SLUG/*-design-*.md 2>/dev/null | head -1)
+DESIGN=$(ls -t ~/.ohmystack/projects/$SLUG/*-$BRANCH-design-*.md 2>/dev/null | head -1)
+[ -z "$DESIGN" ] && DESIGN=$(ls -t ~/.ohmystack/projects/$SLUG/*-design-*.md 2>/dev/null | head -1)
 [ -n "$DESIGN" ] && echo "Design doc found: $DESIGN" || echo "No design doc found"
 ```
 If a design doc exists, read it. Use it as the source of truth for the problem statement, constraints, and chosen approach. If it has a `Supersedes:` field, note that this is a revised design — check the prior version for context on what changed and why.
+
+### OMO Multi-Agent Architecture Dispatch
+
+Before Step 0, replace vague "analyze the architecture" work with an explicit agent swarm.
+Keep the design doc check and normal file reads above; use agents for the deeper pattern scan.
+
+**Phase 1: Codebase and best-practice scan (parallel)**
+
+1. **Explore — existing architecture patterns**
+   ```typescript
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT] Engineering plan review for [feature/topic]. [GOAL] Find the architecture patterns already used in this repo that are closest to the proposed plan. [REQUEST] Search for similar services, controllers, jobs, data flows, dependency boundaries, and rollout patterns. Return reusable modules, coupling risks, and examples with file paths.")
+   ```
+
+2. **Explore — operational hotspots and review history**
+   ```typescript
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT] Eng review for [feature/topic]. [GOAL] Find the parts of the codebase most likely to create blast radius if this plan touches them. [REQUEST] Search recent history, TODO/FIXME clusters, prior review notes, integration seams, test hotspots, and modules with recurring churn. Summarize likely landmines and what already looks fragile.")
+   ```
+
+3. **Librarian — external best practices on proposed tech choices**
+   ```typescript
+   task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="[CONTEXT] Reviewing a proposed technical approach for [feature/topic]. [GOAL] Gather current best practices and known footguns for the tech choices in this plan. [REQUEST] Research framework built-ins, recommended architecture patterns, scaling/operability guidance, and common mistakes for the proposed concurrency/infrastructure/data-access choices.")
+   ```
+
+Wait for the background agents before Step 0 findings. Feed their output into scope challenge, complexity checks, and production-failure analysis.
+
+**Phase 2: Architecture tradeoff consultation (sync)**
+
+4. **Oracle — architecture tradeoff analysis**
+   ```typescript
+   task(category="deep", load_skills=[], run_in_background=false, prompt="[CONTEXT] Engineering plan review for [feature/topic]. I have repo pattern scans plus external best-practice research. [GOAL] Pressure-test the proposed architecture before I walk the user through Step 0 and Section 1. [REQUEST] Compare the likely implementation approaches, identify the best boring-default path, flag any innovation-token spending, and name the highest-risk tradeoffs I should surface to the user.")
+   ```
 
 {{BENEFITS_FROM}}
 
@@ -98,7 +129,7 @@ Before reviewing anything, answer these questions:
    If the plan rolls a custom solution where a built-in exists, flag it as a scope reduction opportunity. Annotate recommendations with **[Layer 1]**, **[Layer 2]**, **[Layer 3]**, or **[EUREKA]** (see preamble's Search Before Building section). If you find a eureka moment — a reason the standard approach is wrong for this case — present it as an architectural insight.
 5. **TODOS cross-reference:** Read `TODOS.md` if it exists. Are any deferred items blocking this plan? Can any deferred items be bundled into this PR without expanding scope? Does this plan create new work that should be captured as a TODO?
 
-5. **Completeness check:** Is the plan doing the complete version or a shortcut? With AI-assisted coding, the cost of completeness (100% test coverage, full edge case handling, complete error paths) is 10-100x cheaper than with a human team. If the plan proposes a shortcut that saves human-hours but only saves minutes with CC+gstack, recommend the complete version. Boil the lake.
+5. **Completeness check:** Is the plan doing the complete version or a shortcut? With AI-assisted coding, the cost of completeness (100% test coverage, full edge case handling, complete error paths) is 10-100x cheaper than with a human team. If the plan proposes a shortcut that saves human-hours but only saves minutes with CC+ohmystack, recommend the complete version. Boil the lake.
 
 6. **Distribution check:** If the plan introduces a new artifact type (CLI binary, library package, container image, mobile app), does it include the build/publish pipeline? Code without distribution is code nobody can use. Check:
    - Is there a CI/CD workflow for building and publishing the artifact?
@@ -271,13 +302,13 @@ Check the git log for this branch. If there are prior commits suggesting a previ
 After producing the Completion Summary above, persist the review result.
 
 **PLAN MODE EXCEPTION — ALWAYS RUN:** This command writes review metadata to
-`~/.gstack/` (user config directory, not project files). The skill preamble
-already writes to `~/.gstack/sessions/` and `~/.gstack/analytics/` — this is
+`~/.ohmystack/` (user config directory, not project files). The skill preamble
+already writes to `~/.ohmystack/sessions/` and `~/.ohmystack/analytics/` — this is
 the same pattern. The review dashboard depends on this data. Skipping this
 command breaks the review readiness dashboard in /ship.
 
 ```bash
-~/.claude/skills/gstack/bin/gstack-review-log '{"skill":"plan-eng-review","timestamp":"TIMESTAMP","status":"STATUS","unresolved":N,"critical_gaps":N,"issues_found":N,"mode":"MODE","commit":"COMMIT"}'
+~/.claude/skills/ohmystack/bin/ohmystack-review-log '{"skill":"plan-eng-review","timestamp":"TIMESTAMP","status":"STATUS","unresolved":N,"critical_gaps":N,"issues_found":N,"mode":"MODE","commit":"COMMIT"}'
 ```
 
 Substitute values from the Completion Summary:

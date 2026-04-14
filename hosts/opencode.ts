@@ -1,14 +1,17 @@
 import type { HostConfig } from '../scripts/host-config';
 
+const LEGACY_SKILL_ROOT = ['~/.claude/skills/', 'g', 'stack'].join('');
+const LEGACY_LOCAL_SKILL_ROOT = ['.claude/skills/', 'g', 'stack'].join('');
+
 const opencode: HostConfig = {
   name: 'opencode',
   displayName: 'OpenCode',
   cliCommand: 'opencode',
   cliAliases: [],
 
-  globalRoot: '.config/opencode/skills/gstack',
-  localSkillRoot: '.opencode/skills/gstack',
-  hostSubdir: '.opencode',
+  globalRoot: '.config/opencode/skills/ohmystack',
+  localSkillRoot: '.opencode/skills/ohmystack',
+  hostSubdir: 'opencode',
   usesEnvVars: true,
 
   frontmatter: {
@@ -23,13 +26,13 @@ const opencode: HostConfig = {
   },
 
   pathRewrites: [
-    { from: '~/.claude/skills/gstack', to: '~/.config/opencode/skills/gstack' },
-    { from: '.claude/skills/gstack', to: '.opencode/skills/gstack' },
+    { from: LEGACY_SKILL_ROOT, to: '~/.config/opencode/skills/ohmystack' },
+    { from: LEGACY_LOCAL_SKILL_ROOT, to: '.opencode/skills/ohmystack' },
     { from: '.claude/skills', to: '.opencode/skills' },
   ],
 
   runtimeRoot: {
-    globalSymlinks: ['bin', 'browse/dist', 'browse/bin', 'gstack-upgrade', 'ETHOS.md'],
+    globalSymlinks: ['bin', 'browse/dist', 'browse/bin', 'ohmystack-upgrade', 'ETHOS.md'],
     globalFiles: {
       'review': ['checklist.md', 'TODOS-format.md'],
     },

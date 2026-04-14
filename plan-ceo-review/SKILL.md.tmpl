@@ -10,7 +10,7 @@ description: |
   Use when asked to "think bigger", "expand scope", "strategy review", "rethink this",
   or "is this ambitious enough".
   Proactively suggest when the user is questioning scope or ambition of a plan,
-  or when the plan feels like it could be thinking bigger. (gstack)
+  or when the plan feels like it could be thinking bigger. (ohmystack)
 benefits-from: [office-hours]
 allowed-tools:
   - Read
@@ -106,10 +106,10 @@ Then read CLAUDE.md, TODOS.md, and any existing architecture docs.
 **Design doc check:**
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
-SLUG=$(~/.claude/skills/gstack/browse/bin/remote-slug 2>/dev/null || basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
+SLUG=$(~/.claude/skills/ohmystack/browse/bin/remote-slug 2>/dev/null || basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null | tr '/' '-' || echo 'no-branch')
-DESIGN=$(ls -t ~/.gstack/projects/$SLUG/*-$BRANCH-design-*.md 2>/dev/null | head -1)
-[ -z "$DESIGN" ] && DESIGN=$(ls -t ~/.gstack/projects/$SLUG/*-design-*.md 2>/dev/null | head -1)
+DESIGN=$(ls -t ~/.ohmystack/projects/$SLUG/*-$BRANCH-design-*.md 2>/dev/null | head -1)
+[ -z "$DESIGN" ] && DESIGN=$(ls -t ~/.ohmystack/projects/$SLUG/*-design-*.md 2>/dev/null | head -1)
 [ -n "$DESIGN" ] && echo "Design doc found: $DESIGN" || echo "No design doc found"
 ```
 If a design doc exists (from `/office-hours`), read it. Use it as the source of truth for the problem statement, constraints, and chosen approach. If it has a `Supersedes:` field, note that this is a revised design.
@@ -117,7 +117,7 @@ If a design doc exists (from `/office-hours`), read it. Use it as the source of 
 **Handoff note check** (reuses $SLUG and $BRANCH from the design doc check above):
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
-HANDOFF=$(ls -t ~/.gstack/projects/$SLUG/*-$BRANCH-ceo-handoff-*.md 2>/dev/null | head -1)
+HANDOFF=$(ls -t ~/.ohmystack/projects/$SLUG/*-$BRANCH-ceo-handoff-*.md 2>/dev/null | head -1)
 [ -n "$HANDOFF" ] && echo "HANDOFF_FOUND: $HANDOFF" || echo "NO_HANDOFF"
 ```
 If this block runs in a separate shell from the design doc check, recompute $SLUG and $BRANCH first using the same commands from that block.
@@ -178,6 +178,44 @@ Read ETHOS.md for the Search Before Building framework (the preamble's Search Be
 - "[product category] landscape {current year}"
 - "[key feature] alternatives"
 - "why [incumbent/conventional approach] [succeeds/fails]"
+
+### OMO Multi-Agent Research Dispatch
+
+Replace generic "research the market first" behavior with explicit sub-agent dispatch.
+Keep the bash-based system audit above. Add this agent swarm immediately after you
+understand the plan/problem statement and before Step 0A starts.
+
+**Phase 1: Research (parallel)**
+Launch background agents in parallel:
+
+1. **Explore — internal leverage + existing product surface**
+   ```typescript
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT] CEO/founder plan review for [feature/topic]. [GOAL] Find existing codepaths, product surfaces, TODOs, and prior work that already touch this problem. [REQUEST] Search the repo for relevant flows, user-facing surfaces, docs, and known pain points. Return concrete file paths, patterns worth reusing, and anti-patterns to avoid.")
+   ```
+
+2. **Explore — competitor clues already embedded in the repo**
+   ```typescript
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT] CEO review for [feature/topic]. [GOAL] Find any references in the codebase/docs to competitors, incumbent workflows, previous product bets, or market assumptions. [REQUEST] Search plans, docs, TODOs, and review artifacts for competitor names, user requests, prior rejected ideas, and strategic constraints.")
+   ```
+
+3. **Librarian — industry benchmarks + comparable products**
+   ```typescript
+   task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="[CONTEXT] Reviewing a product plan for [feature/topic]. [GOAL] Find current industry benchmarks and comparable products. [REQUEST] Research the product category landscape, notable incumbents, benchmark UX/business patterns, and 3-5 comparable products with what they do well, where they fail, and what users appear to value most.")
+   ```
+
+4. **Librarian — search-before-building synthesis**
+   ```typescript
+   task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="[CONTEXT] CEO plan review for [feature/topic]. [GOAL] Pressure-test the conventional wisdom in this space. [REQUEST] Gather the strongest arguments for the default industry approach, major alternatives, and any contrarian patterns that appear to be working in practice. Summarize as tried-and-true vs emerging vs suspect.")
+   ```
+
+Wait for the background agents to complete before proceeding to Step 0. Use their findings to sharpen Premise Challenge, Dream State Mapping, and expansion opportunities.
+
+**Phase 2: Strategic verification (sync)**
+After the background findings are in, run a synchronous oracle consultation before final mode framing:
+
+```typescript
+task(category="deep", load_skills=[], run_in_background=false, prompt="[CONTEXT] CEO/founder review for [feature/topic]. Background research has surfaced current codebase leverage, market benchmarks, and comparable products. [GOAL] Verify the strategic scope posture before I guide the user. [REQUEST] Evaluate whether SCOPE EXPANSION, SELECTIVE EXPANSION, HOLD SCOPE, or SCOPE REDUCTION best fits the evidence. Call out the strongest strategic risk, the strongest upside, and which scope decisions require explicit user opt-in.")
+```
 
 If WebSearch is unavailable, skip this check and note: "Search unavailable — proceeding with in-distribution knowledge only."
 
@@ -267,17 +305,17 @@ Rules:
 After the opt-in/cherry-pick ceremony, write the plan to disk so the vision and decisions survive beyond this conversation. Only run this step for EXPANSION and SELECTIVE EXPANSION modes.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" && mkdir -p ~/.gstack/projects/$SLUG/ceo-plans
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)" && mkdir -p ~/.ohmystack/projects/$SLUG/ceo-plans
 ```
 
 Before writing, check for existing CEO plans in the ceo-plans/ directory. If any are >30 days old or their branch has been merged/deleted, offer to archive them:
 
 ```bash
-mkdir -p ~/.gstack/projects/$SLUG/ceo-plans/archive
-# For each stale plan: mv ~/.gstack/projects/$SLUG/ceo-plans/{old-plan}.md ~/.gstack/projects/$SLUG/ceo-plans/archive/
+mkdir -p ~/.ohmystack/projects/$SLUG/ceo-plans/archive
+# For each stale plan: mv ~/.ohmystack/projects/$SLUG/ceo-plans/{old-plan}.md ~/.ohmystack/projects/$SLUG/ceo-plans/archive/
 ```
 
-Write to `~/.gstack/projects/$SLUG/ceo-plans/{date}-{feature-slug}.md` using this format:
+Write to `~/.ohmystack/projects/$SLUG/ceo-plans/{date}-{feature-slug}.md` using this format:
 
 ```markdown
 ---
@@ -323,7 +361,7 @@ Think ahead to implementation: What decisions will need to be made during implem
   HOUR 4-5 (integration):  What will surprise them?
   HOUR 6+ (polish/tests):  What will they wish they'd planned for?
 ```
-NOTE: These represent human-team implementation hours. With CC + gstack,
+NOTE: These represent human-team implementation hours. With CC + ohmystack,
 6 hours of human implementation compresses to ~30-60 minutes. The decisions
 are identical — the implementation speed is 10-20x faster. Always present
 both scales when discussing effort.
@@ -646,7 +684,7 @@ For each TODO, describe:
 * **Pros:** What you gain by doing this work.
 * **Cons:** Cost, complexity, or risks of doing it.
 * **Context:** Enough detail that someone picking this up in 3 months understands the motivation, the current state, and where to start.
-* **Effort estimate:** S/M/L/XL (human team) → with CC+gstack: S→S, M→S, L→M, XL→L
+* **Effort estimate:** S/M/L/XL (human team) → with CC+ohmystack: S→S, M→S, L→M, XL→L
 * **Priority:** P1/P2/P3
 * **Depends on / blocked by:** Any prerequisites or ordering constraints.
 
@@ -716,7 +754,7 @@ the review is complete and the context is no longer needed.
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
 {{SLUG_EVAL}}
-rm -f ~/.gstack/projects/$SLUG/*-$BRANCH-ceo-handoff-*.md 2>/dev/null || true
+rm -f ~/.ohmystack/projects/$SLUG/*-$BRANCH-ceo-handoff-*.md 2>/dev/null || true
 ```
 
 ## Review Log
@@ -724,13 +762,13 @@ rm -f ~/.gstack/projects/$SLUG/*-$BRANCH-ceo-handoff-*.md 2>/dev/null || true
 After producing the Completion Summary above, persist the review result.
 
 **PLAN MODE EXCEPTION — ALWAYS RUN:** This command writes review metadata to
-`~/.gstack/` (user config directory, not project files). The skill preamble
-already writes to `~/.gstack/sessions/` and `~/.gstack/analytics/` — this is
+`~/.ohmystack/` (user config directory, not project files). The skill preamble
+already writes to `~/.ohmystack/sessions/` and `~/.ohmystack/analytics/` — this is
 the same pattern. The review dashboard depends on this data. Skipping this
 command breaks the review readiness dashboard in /ship.
 
 ```bash
-~/.claude/skills/gstack/bin/gstack-review-log '{"skill":"plan-ceo-review","timestamp":"TIMESTAMP","status":"STATUS","unresolved":N,"critical_gaps":N,"mode":"MODE","scope_proposed":N,"scope_accepted":N,"scope_deferred":N,"commit":"COMMIT"}'
+~/.claude/skills/ohmystack/bin/ohmystack-review-log '{"skill":"plan-ceo-review","timestamp":"TIMESTAMP","status":"STATUS","unresolved":N,"critical_gaps":N,"mode":"MODE","scope_proposed":N,"scope_accepted":N,"scope_deferred":N,"commit":"COMMIT"}'
 ```
 
 Before running this command, substitute the placeholder values from the Completion Summary you just produced:
@@ -769,7 +807,7 @@ At the end of the review, if the vision produced a compelling feature direction,
 
 "The vision from this review produced {N} accepted scope expansions. Want to promote it to a design doc in the repo?"
 - **A)** Promote to `docs/designs/{FEATURE}.md` (committed to repo, visible to the team)
-- **B)** Keep in `~/.gstack/projects/` only (local, personal reference)
+- **B)** Keep in `~/.ohmystack/projects/` only (local, personal reference)
 - **C)** Skip
 
 If promoted, copy the CEO plan content to `docs/designs/{FEATURE}.md` (create the directory if needed) and update the `status` field in the original CEO plan from `ACTIVE` to `PROMOTED`.

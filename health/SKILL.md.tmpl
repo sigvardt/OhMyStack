@@ -7,7 +7,7 @@ description: |
   test runner, dead code detector, shell linter), computes a weighted composite
   0-10 score, and tracks trends over time. Use when: "health check",
   "code quality", "how healthy is the codebase", "run all checks",
-  "quality score". (gstack)
+  "quality score". (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -118,8 +118,33 @@ END=$(date +%s)
 echo "TOOL:typecheck EXIT:$EXIT_CODE DURATION:$((END-START))s"
 ```
 
-Run tools sequentially (some may share resources or lock files). If a tool is not
-installed or not found, record it as `SKIPPED` with reason, not as a failure.
+If the project's tools are safe to run in parallel, prefer OMO dispatch so the main skill can orchestrate the dashboard while specialists run the checks. Use sequential fallback only when tools contend for the same cache, DB, or lock files.
+
+### Step 2.1: OMO multi-agent dispatch
+
+Dispatch one background explorer per major check that exists in the detected health stack:
+
+1. **Type checker / linter scan**
+   ```
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Run the detected type checker and linter for this repo. Capture exit codes, duration, concise raw output, and countable error/warning totals suitable for the /health scoring rubric.")
+   ```
+
+2. **Tests / dead code scan**
+   ```
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Run the detected test command and dead-code tool for this repo. Capture exit codes, duration, pass/fail counts, and unused symbol counts suitable for the /health scoring rubric.")
+   ```
+
+3. **Shell hygiene / score verifier**
+   ```
+   task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="Review the collected /health tool results after they land. Verify category scoring, skipped-tool weight redistribution, composite-score math, and identify the highest-risk regressions to highlight in the dashboard.")
+   ```
+
+4. **Optional shellcheck explorer**
+   ```
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="If shell scripts exist, run the detected shell lint command, capture distinct findings, exit code, duration, and the most actionable output lines for the /health report. If no shell lint applies, return SKIPPED with reason.")
+   ```
+
+Collect all results before final scoring. Do **not** duplicate a specialist's check in the main thread unless you are explicitly falling back from a failed dispatch.
 
 ---
 
@@ -149,6 +174,14 @@ composite = (typecheck_score * 0.25) + (lint_score * 0.20) + (test_score * 0.30)
 
 If a category is skipped (tool not available), redistribute its weight proportionally
 among the remaining categories.
+
+### Step 3.1: Composite score verification
+
+After you compute the first-pass category scores, compare them against the Oracle verifier dispatch:
+
+- If Oracle agrees, use the score as final.
+- If Oracle disputes the math or a category count, resolve the discrepancy with the actual tool output and state which interpretation won.
+- The final composite score must still use the exact weights above and remain on a 0-10 scale.
 
 ---
 
@@ -201,7 +234,7 @@ DETAILS: Lint (3 warnings)
 {{SLUG_SETUP}}
 ```
 
-Append one JSONL line to `~/.gstack/projects/$SLUG/health-history.jsonl`:
+Append one JSONL line to `~/.ohmystack/projects/$SLUG/health-history.jsonl`:
 
 ```json
 {"ts":"2026-03-31T14:30:00Z","branch":"main","score":9.1,"typecheck":10,"lint":8,"test":10,"deadcode":7,"shell":10,"duration_s":23}
@@ -220,12 +253,12 @@ If a category was skipped, set its value to `null`.
 
 ## Step 6: Trend Analysis + Recommendations
 
-Read the last 10 entries from `~/.gstack/projects/$SLUG/health-history.jsonl` (if the
+Read the last 10 entries from `~/.ohmystack/projects/$SLUG/health-history.jsonl` (if the
 file exists and has prior entries).
 
 ```bash
 {{SLUG_SETUP}}
-tail -10 ~/.gstack/projects/$SLUG/health-history.jsonl 2>/dev/null || echo "NO_HISTORY"
+tail -10 ~/.ohmystack/projects/$SLUG/health-history.jsonl 2>/dev/null || echo "NO_HISTORY"
 ```
 
 **If prior entries exist, show the trend:**

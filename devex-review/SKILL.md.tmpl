@@ -9,7 +9,7 @@ description: |
   scorecard with evidence. Compares against /plan-devex-review scores if they
   exist (the boomerang: plan said 3 minutes, reality says 8). Use when asked to
   "test the DX", "DX audit", "developer experience test", or "try the
-  onboarding". Proactively suggest after shipping a developer-facing feature. (gstack)
+  onboarding". Proactively suggest after shipping a developer-facing feature. (ohmystack)
 voice-triggers:
   - "dx audit"
   - "test the developer experience"
@@ -59,6 +59,16 @@ INFERRED from artifacts. Never guess. State your evidence source for every score
 2. Read README.md for getting started instructions
 3. Read package.json or equivalent for install commands
 
+Before Step 1, dispatch agents to map the DX surface and gather external context:
+
+```python
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="TASK: Map developer touchpoints for this product. Find docs entry points, getting-started paths, install commands, quickstarts, CLI commands, examples, API playgrounds, auth/setup gates, error pages, CHANGELOGs, migration guides, contributing docs, and feedback channels. Return a testable DX checklist with file/URL evidence.")
+task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="TASK: Benchmark comparable developer tools. Find onboarding/getting-started expectations, time-to-hello-world ranges, and notable DX patterns for similar products. Return concise competitor baselines and links/evidence.")
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="TASK: Prepare a DX evaluation frame for this audit. Based on the product type, identify the highest-leverage DX dimensions, what good looks like, and what would count as a strategically serious DX gap.")
+```
+
+Use these agent outputs to shape the live audit. They improve prioritization and calibration; they do NOT replace real browse/bash testing.
+
 If URLs are missing, AskUserQuestion: "What's the URL for the docs/product I should test?"
 
 ### Boomerang Baseline
@@ -66,8 +76,8 @@ If URLs are missing, AskUserQuestion: "What's the URL for the docs/product I sho
 Check for prior /plan-devex-review scores:
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-~/.claude/skills/gstack/bin/gstack-review-read 2>/dev/null | grep plan-devex-review || echo "NO_PRIOR_PLAN_REVIEW"
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+~/.claude/skills/ohmystack/bin/ohmystack-review-read 2>/dev/null | grep plan-devex-review || echo "NO_PRIOR_PLAN_REVIEW"
 ```
 
 If prior scores exist, display them. These are your baseline for the boomerang comparison.
@@ -75,6 +85,8 @@ If prior scores exist, display them. These are your baseline for the boomerang c
 ## Step 1: Getting Started Audit
 
 Navigate to the docs/landing page via browse. Screenshot it.
+
+Use the explore mapping to decide which getting-started flows must be timed. Measure TTHW from the actual first developer action to the first successful observable outcome.
 
 ```
 GETTING STARTED AUDIT
@@ -93,6 +105,8 @@ Test what you can:
 - CLI: Run `--help` via bash. Evaluate output quality, flag design, discoverability.
 - API playground: Navigate via browse if one exists. Screenshot.
 - Naming: Check consistency across the API surface.
+
+Use the librarian benchmark to compare help-text quality, install friction, and expected onboarding time against similar tools instead of scoring in a vacuum.
 
 Score 0-10. Load "## Pass 2" from dx-hall-of-fame.md for calibration.
 
@@ -197,12 +211,18 @@ PLAN vs REALITY
 
 Flag any dimension where live score < plan score - 2 (reality fell short of plan).
 
+After drafting the scorecard, consult Oracle for strategic synthesis before writing recommendations:
+
+```python
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="TASK: Review this DX audit for strategic significance. SCORECARD: [scores]. TTHW: [measured]. COMPETITOR BASELINES: [librarian summary]. BOOMERANG DELTAS: [plan vs reality]. Return the top DX risks, strongest recommendations, and which problems most threaten adoption.")
+```
+
 ## Review Log
 
 **PLAN MODE EXCEPTION — ALWAYS RUN:**
 
 ```bash
-~/.claude/skills/gstack/bin/gstack-review-log '{"skill":"devex-review","timestamp":"TIMESTAMP","status":"STATUS","overall_score":N,"product_type":"TYPE","tthw_measured":"TTHW","dimensions_tested":N,"dimensions_inferred":N,"boomerang":"YES_OR_NO","commit":"COMMIT"}'
+~/.claude/skills/ohmystack/bin/ohmystack-review-log '{"skill":"devex-review","timestamp":"TIMESTAMP","status":"STATUS","overall_score":N,"product_type":"TYPE","tthw_measured":"TTHW","dimensions_tested":N,"dimensions_inferred":N,"boomerang":"YES_OR_NO","commit":"COMMIT"}'
 ```
 
 {{REVIEW_DASHBOARD}}

@@ -7,7 +7,7 @@ description: |
   diff, updates README/ARCHITECTURE/CONTRIBUTING/CLAUDE.md to match what shipped,
   polishes CHANGELOG voice, cleans up TODOS, and optionally bumps VERSION. Use when
   asked to "update the docs", "sync documentation", or "post-ship docs".
-  Proactively suggest after a PR is merged or code is shipped. (gstack)
+  Proactively suggest after a PR is merged or code is shipped. (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -15,6 +15,7 @@ allowed-tools:
   - Edit
   - Grep
   - Glob
+  - Agent
   - AskUserQuestion
 ---
 
@@ -74,7 +75,7 @@ git diff <base>...HEAD --name-only
 3. Discover all documentation files in the repo:
 
 ```bash
-find . -maxdepth 2 -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./.gstack/*" -not -path "./.context/*" | sort
+find . -maxdepth 2 -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./.ohmystack/*" -not -path "./.context/*" | sort
 ```
 
 4. Classify the changes into categories relevant to documentation:
@@ -83,14 +84,22 @@ find . -maxdepth 2 -name "*.md" -not -path "./.git/*" -not -path "./node_modules
    - **Removed functionality** — deleted files, removed commands
    - **Infrastructure** — build system, test infrastructure, CI
 
-5. Output a brief summary: "Analyzing N files changed across M commits. Found K documentation files to review."
+5. Launch an explore background scan before you start reading doc files manually:
+
+   ```typescript
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Post-ship documentation scan for branch <branch-name> against <base>. Find every doc file that likely needs updating, including stale references, outdated paths, old command names, version mismatches, and docs contradicted by the shipped diff.")
+   ```
+
+   Let this run while you audit the obvious entry-point docs. Use its findings to widen the doc review set, catch stale references, and avoid missing secondary docs.
+
+6. Output a brief summary: "Analyzing N files changed across M commits. Found K documentation files to review."
 
 ---
 
 ## Step 2: Per-File Documentation Audit
 
 Read each documentation file and cross-reference it against the diff. Use these generic heuristics
-(adapt to whatever project you're in — these are not gstack-specific):
+(adapt to whatever project you're in — these are not ohmystack-specific):
 
 **README.md:**
 - Does it describe all features and capabilities visible in the diff?
@@ -132,6 +141,15 @@ For each file, classify needed updates as:
 ## Step 3: Apply Auto-Updates
 
 Make all clear, factual updates directly using the Edit tool.
+
+Dispatch the implementation work one doc at a time so each factual update is tightly scoped and easy to verify:
+
+```typescript
+For each doc needing update:
+task(category="quick", load_skills=[], run_in_background=false, prompt="Update [doc-file] to match shipped changes: [specific changes needed]")
+```
+
+Use the main session to coordinate file selection, decide what changed, and review the results. Each quick task should target exactly one doc file with concrete requested deltas.
 
 For each file modified, output a one-line summary describing **what specifically changed** — not
 just "Updated README.md" but "README.md: added /new-skill to skills table, updated skill count
@@ -201,6 +219,14 @@ After auditing each file individually, do a cross-doc consistency pass:
    should be discoverable from one of the two entry-point files.
 5. Flag any contradictions between documents. Auto-fix clear factual inconsistencies (e.g., a
    version mismatch). Use AskUserQuestion for narrative contradictions.
+
+Before the final summary, run an Oracle verification pass on the docs you touched:
+
+```typescript
+task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="Verify that the updated documentation matches what actually shipped on branch <branch-name> against <base>. Check for factual drift, missing doc updates, stale references, and contradictions across README/ARCHITECTURE/CONTRIBUTING/CLAUDE/CHANGELOG/TODOS.")
+```
+
+Wait for the Oracle result before finishing. If Oracle finds factual mismatches, fix them before declaring the docs synced.
 
 ---
 
@@ -297,12 +323,12 @@ git push
 
 **If GitHub:**
 ```bash
-gh pr view --json body -q .body > /tmp/gstack-pr-body-$$.md
+gh pr view --json body -q .body > /tmp/ohmystack-pr-body-$$.md
 ```
 
 **If GitLab:**
 ```bash
-glab mr view -F json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('description',''))" > /tmp/gstack-pr-body-$$.md
+glab mr view -F json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('description',''))" > /tmp/ohmystack-pr-body-$$.md
 ```
 
 2. If the tempfile already contains a `## Documentation` section, replace that section with the
@@ -316,11 +342,11 @@ glab mr view -F json 2>/dev/null | python3 -c "import sys,json; print(json.load(
 
 **If GitHub:**
 ```bash
-gh pr edit --body-file /tmp/gstack-pr-body-$$.md
+gh pr edit --body-file /tmp/ohmystack-pr-body-$$.md
 ```
 
 **If GitLab:**
-Read the contents of `/tmp/gstack-pr-body-$$.md` using the Read tool, then pass it to `glab mr update` using a heredoc to avoid shell metacharacter issues:
+Read the contents of `/tmp/ohmystack-pr-body-$$.md` using the Read tool, then pass it to `glab mr update` using a heredoc to avoid shell metacharacter issues:
 ```bash
 glab mr update -d "$(cat <<'MRBODY'
 <paste the file contents here>
@@ -331,7 +357,7 @@ MRBODY
 5. Clean up the tempfile:
 
 ```bash
-rm -f /tmp/gstack-pr-body-$$.md
+rm -f /tmp/ohmystack-pr-body-$$.md
 ```
 
 6. If `gh pr view` / `glab mr view` fails (no PR/MR exists): skip with message "No PR/MR found — skipping body update."

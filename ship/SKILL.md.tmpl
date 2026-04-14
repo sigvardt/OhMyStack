@@ -7,7 +7,7 @@ description: |
   update CHANGELOG, commit, push, create PR. Use when asked to "ship", "deploy",
   "push to main", "create a PR", "merge and push", or "get it deployed".
   Proactively invoke this skill (do NOT push/PR directly) when the user says code
-  is ready, asks about deploying, wants to push code up, or asks to create a PR. (gstack)
+  is ready, asks about deploying, wants to push code up, or asks to create a PR. (ohmystack)
 allowed-tools:
   - Bash
   - Read
@@ -72,7 +72,16 @@ Never skip a verification step because a prior `/ship` run already performed it.
 
 3. Run `git diff <base>...HEAD --stat` and `git log <base>..HEAD --oneline` to understand what's being shipped.
 
-4. Check review readiness:
+4. Launch background explore agents before the rest of pre-flight so you have extra context while the main flow continues:
+
+   ```typescript
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Pre-flight for /ship on branch <branch-name> against <base>. Find uncommitted or adjacent related changes that should likely ship together, and flag risky omissions or hidden scope edges.")
+   task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="Pre-flight for /ship on branch <branch-name> against <base>. Inspect changed files and existing tests to find likely coverage gaps, weak assertions, or code paths that may be under-tested.")
+   ```
+
+   Do **not** block on these yet. Let them run while Steps 1.5-3.4 execute. Fold their findings into the pre-flight summary, coverage audit, and review gate when the results are ready.
+
+5. Check review readiness:
 
 {{REVIEW_DASHBOARD}}
 
@@ -84,7 +93,7 @@ Check diff size: `git diff <base>...HEAD --stat | tail -1`. If the diff is >200 
 
 If CEO Review is missing, mention as informational ("CEO Review not run — recommended for product changes") but do NOT block.
 
-For Design Review: run `source <(~/.claude/skills/gstack/bin/gstack-diff-scope <base> 2>/dev/null)`. If `SCOPE_FRONTEND=true` and no design review (plan-design-review or design-review-lite) exists in the dashboard, mention: "Design Review not run — this PR changes frontend code. The lite design check will run automatically in Step 3.5, but consider running /design-review for a full visual audit post-implementation." Still never block.
+For Design Review: run `source <(~/.claude/skills/ohmystack/bin/ohmystack-diff-scope <base> 2>/dev/null)`. If `SCOPE_FRONTEND=true` and no design review (plan-design-review or design-review-lite) exists in the dashboard, mention: "Design Review not run — this PR changes frontend code. The lite design check will run automatically in Step 3.5, but consider running /design-review for a full visual audit post-implementation." Still never block.
 
 Continue to Step 1.5 — do NOT block or ask. Ship runs its own review in Step 3.5.
 
@@ -254,7 +263,16 @@ Review the diff for structural issues that tests don't catch.
 
 2. Run `git diff origin/<base>` to get the full diff (scoped to feature changes against the freshly-fetched base branch).
 
-3. Apply the review checklist in two passes:
+3. Before applying the checklist, launch the hard review gate in parallel using the diff summary from Step 2:
+
+   ```typescript
+   task(subagent_type="oracle", run_in_background=true, load_skills=[], prompt="Review this diff for: SQL safety, trust boundary violations, conditional side effects. Diff: [diff summary]")
+   task(subagent_type="momus", run_in_background=true, load_skills=[], prompt="Adversarial critique of this diff: [diff summary]. Find gaps, missing edge cases, untested paths.")
+   ```
+
+   Wait for both review agents before Step 8. Both must pass for PR creation to proceed. If either agent finds blocking risk, treat it like a Step 3.5 ASK/BLOCKER outcome and resolve it before continuing.
+
+4. Apply the review checklist in two passes:
    - **Pass 1 (CRITICAL):** SQL & Data Safety, LLM Output Trust Boundary
    - **Pass 2 (INFORMATIONAL):** All remaining categories
 
@@ -268,29 +286,29 @@ Review the diff for structural issues that tests don't catch.
 
 {{CROSS_REVIEW_DEDUP}}
 
-4. **Classify each finding from both the checklist pass and specialist review (Step 3.55-3.56) as AUTO-FIX or ASK** per the Fix-First Heuristic in
+5. **Classify each finding from the checklist pass, specialist review (Step 3.55-3.56), and the Oracle/Momus gate as AUTO-FIX or ASK** per the Fix-First Heuristic in
    checklist.md. Critical findings lean toward ASK; informational lean toward AUTO-FIX.
 
-5. **Auto-fix all AUTO-FIX items.** Apply each fix. Output one line per fix:
+6. **Auto-fix all AUTO-FIX items.** Apply each fix. Output one line per fix:
    `[AUTO-FIXED] [file:line] Problem → what you did`
 
-6. **If ASK items remain,** present them in ONE AskUserQuestion:
+7. **If ASK items remain,** present them in ONE AskUserQuestion:
    - List each with number, severity, problem, recommended fix
    - Per-item options: A) Fix  B) Skip
    - Overall RECOMMENDATION
    - If 3 or fewer ASK items, you may use individual AskUserQuestion calls instead
 
-7. **After all fixes (auto + user-approved):**
+8. **After all fixes (auto + user-approved):**
    - If ANY fixes were applied: commit fixed files by name (`git add <fixed-files> && git commit -m "fix: pre-landing review fixes"`), then **STOP** and tell the user to run `/ship` again to re-test.
    - If no fixes applied (all ASK items skipped, or no issues found): continue to Step 4.
 
-8. Output summary: `Pre-Landing Review: N issues — M auto-fixed, K asked (J fixed, L skipped)`
+9. Output summary: `Pre-Landing Review: N issues — M auto-fixed, K asked (J fixed, L skipped)`
 
    If no issues found: `Pre-Landing Review: No issues found.`
 
-9. Persist the review result to the review log:
+10. Persist the review result to the review log:
 ```bash
-~/.claude/skills/gstack/bin/gstack-review-log '{"skill":"review","timestamp":"TIMESTAMP","status":"STATUS","issues_found":N,"critical":N,"informational":N,"quality_score":SCORE,"specialists":SPECIALISTS_JSON,"findings":FINDINGS_JSON,"commit":"'"$(git rev-parse --short HEAD)"'","via":"ship"}'
+~/.claude/skills/ohmystack/bin/ohmystack-review-log '{"skill":"review","timestamp":"TIMESTAMP","status":"STATUS","issues_found":N,"critical":N,"informational":N,"quality_score":SCORE,"specialists":SPECIALISTS_JSON,"findings":FINDINGS_JSON,"commit":"'"$(git rev-parse --short HEAD)"'","via":"ship"}'
 ```
 Substitute TIMESTAMP (ISO 8601), STATUS ("clean" if no issues, "issues_found" otherwise),
 and N values from the summary counts above. The `via:"ship"` distinguishes from standalone `/review` runs.
@@ -299,6 +317,8 @@ and N values from the summary counts above. The `via:"ship"` distinguishes from 
 - `findings` = array of per-finding records. For each finding (from checklist pass and specialists), include: `{"fingerprint":"path:line:category","severity":"CRITICAL|INFORMATIONAL","action":"ACTION"}`. ACTION is `"auto-fixed"`, `"fixed"` (user approved), or `"skipped"` (user chose Skip).
 
 Save the review output — it goes into the PR body in Step 8.
+
+Include a one-line Oracle/Momus gate verdict in the saved review output so the PR body makes it explicit that both parallel review agents passed before PR creation.
 
 ---
 
@@ -389,7 +409,7 @@ Read `.claude/skills/review/TODOS-format.md` for the canonical format reference.
 **1. Check if TODOS.md exists** in the repository root.
 
 **If TODOS.md does not exist:** Use AskUserQuestion:
-- Message: "GStack recommends maintaining a TODOS.md organized by skill/component, then priority (P0 at top through P4, then Completed at bottom). See TODOS-format.md for the full format. Would you like to create one?"
+- Message: "OhMyStack recommends maintaining a TODOS.md organized by skill/component, then priority (P0 at top through P4, then Completed at bottom). See TODOS-format.md for the full format. Would you like to create one?"
 - Options: A) Create it now, B) Skip for now
 - If A: Create `TODOS.md` with a skeleton (# TODOS heading + ## Completed section). Continue to step 3.
 - If B: Skip the rest of Step 5.5. Continue to Step 6.
@@ -643,13 +663,13 @@ If Step 8.5 created a docs commit, re-edit the PR/MR body to include the latest 
 Log coverage and plan completion data so `/retro` can track trends:
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" && mkdir -p ~/.gstack/projects/$SLUG
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)" && mkdir -p ~/.ohmystack/projects/$SLUG
 ```
 
-Append to `~/.gstack/projects/$SLUG/$BRANCH-reviews.jsonl`:
+Append to `~/.ohmystack/projects/$SLUG/$BRANCH-reviews.jsonl`:
 
 ```bash
-echo '{"skill":"ship","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","coverage_pct":COVERAGE_PCT,"plan_items_total":PLAN_TOTAL,"plan_items_done":PLAN_DONE,"verification_result":"VERIFY_RESULT","version":"VERSION","branch":"BRANCH"}' >> ~/.gstack/projects/$SLUG/$BRANCH-reviews.jsonl
+echo '{"skill":"ship","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","coverage_pct":COVERAGE_PCT,"plan_items_total":PLAN_TOTAL,"plan_items_done":PLAN_DONE,"verification_result":"VERIFY_RESULT","version":"VERSION","branch":"BRANCH"}' >> ~/.ohmystack/projects/$SLUG/$BRANCH-reviews.jsonl
 ```
 
 Substitute from earlier steps:

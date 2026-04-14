@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * analytics — CLI for viewing gstack skill usage statistics.
+ * analytics — CLI for viewing OhMyStack skill usage statistics.
  *
- * Reads ~/.gstack/analytics/skill-usage.jsonl and displays:
+ * Reads ~/.ohmystack/analytics/skill-usage.jsonl and displays:
  *   - Top skills by invocation count
  *   - Per-repo skill breakdown
  *   - Safety hook fire events
@@ -13,7 +13,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 
 export interface AnalyticsEvent {
   skill: string;
@@ -23,7 +22,8 @@ export interface AnalyticsEvent {
   pattern?: string;
 }
 
-const ANALYTICS_FILE = path.join(os.homedir(), '.gstack', 'analytics', 'skill-usage.jsonl');
+const HOME_DIR = process.env.HOME || '';
+const ANALYTICS_FILE = path.join(HOME_DIR, '.ohmystack', 'analytics', 'skill-usage.jsonl');
 
 /**
  * Parse JSONL content into AnalyticsEvent[], skipping malformed lines.
@@ -71,7 +71,7 @@ export function formatReport(events: AnalyticsEvent[], period: string = 'all'): 
   const hookEvents = events.filter(e => e.event === 'hook_fire');
 
   const lines: string[] = [];
-  lines.push('gstack skill usage analytics');
+  lines.push('ohmystack skill usage analytics');
   lines.push('\u2550'.repeat(39));
   lines.push('');
 
@@ -185,6 +185,6 @@ function main() {
   console.log(formatReport(filtered, period));
 }
 
-if (import.meta.main) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   main();
 }

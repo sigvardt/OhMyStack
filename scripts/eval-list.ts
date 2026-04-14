@@ -1,13 +1,12 @@
 #!/usr/bin/env bun
 /**
- * List eval runs from ~/.gstack-dev/evals/
+ * List eval runs from ~/.ohmystack-dev/evals/
  *
  * Usage: bun run eval:list [--branch <name>] [--tier e2e|llm-judge] [--limit N]
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { getProjectEvalDir } from '../test/helpers/eval-store';
 
 const EVAL_DIR = getProjectEvalDir();

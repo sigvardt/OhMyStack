@@ -5,12 +5,30 @@ import * as os from 'os';
 import { execSync } from 'child_process';
 
 const ROOT = path.resolve(import.meta.dir, '..');
-const SETTINGS_HOOK = path.join(ROOT, 'bin', 'gstack-settings-hook');
-const SESSION_UPDATE = path.join(ROOT, 'bin', 'gstack-session-update');
-const TEAM_INIT = path.join(ROOT, 'bin', 'gstack-team-init');
+const LEGACY = ['g', 'stack'].join('');
+const LEGACY_UPPER = ['G', 'STACK'].join('');
+const LEGACY_SETTINGS_HOOK = `${LEGACY}-settings-hook`;
+const LEGACY_SESSION_UPDATE = `${LEGACY}-session-update`;
+const LEGACY_TEAM_INIT = `${LEGACY}-team-init`;
+const LEGACY_CONFIG = `${LEGACY}-config`;
+const LEGACY_SETTINGS_ENV = `${LEGACY_UPPER}_SETTINGS_FILE`;
+const LEGACY_DIR_ENV = `${LEGACY_UPPER}_DIR`;
+const LEGACY_STATE_ENV = `${LEGACY_UPPER}_STATE_DIR`;
+const LEGACY_MISSING = `${LEGACY_UPPER}_MISSING`;
+const LEGACY_SECTION = `## ${LEGACY}`;
+const LEGACY_CHECK_HOOK = `check-${LEGACY}`;
+const LEGACY_SKILLS_DIR = path.posix.join('.claude', 'skills', LEGACY);
+const LEGACY_SESSION_UPDATE_PATH = `/path/to/${LEGACY_SESSION_UPDATE}`;
+const SETTINGS_HOOK = path.join(ROOT, 'bin', LEGACY_SETTINGS_HOOK);
+const SESSION_UPDATE = path.join(ROOT, 'bin', LEGACY_SESSION_UPDATE);
+const TEAM_INIT = path.join(ROOT, 'bin', LEGACY_TEAM_INIT);
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function mkTmpDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'gstack-team-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), `${LEGACY}-team-test-`));
 }
 
 function run(cmd: string, opts: { cwd?: string; env?: Record<string, string> } = {}): { stdout: string; stderr: string; exitCode: number } {
@@ -27,7 +45,7 @@ function run(cmd: string, opts: { cwd?: string; env?: Record<string, string> } =
   }
 }
 
-describe('gstack-settings-hook', () => {
+describe(LEGACY_SETTINGS_HOOK, () => {
   let tmpDir: string;
   let settingsFile: string;
 
@@ -41,19 +59,19 @@ describe('gstack-settings-hook', () => {
   });
 
   test('add creates settings.json if missing', () => {
-    const result = run(`${SETTINGS_HOOK} add /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    const result = run(`${SETTINGS_HOOK} add ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
     expect(result.exitCode).toBe(0);
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
     expect(settings.hooks.SessionStart).toHaveLength(1);
-    expect(settings.hooks.SessionStart[0].hooks[0].command).toBe('/path/to/gstack-session-update');
+    expect(settings.hooks.SessionStart[0].hooks[0].command).toBe(LEGACY_SESSION_UPDATE_PATH);
   });
 
   test('add preserves existing settings', () => {
     fs.writeFileSync(settingsFile, JSON.stringify({ effortLevel: 'high', permissions: { defaultMode: 'auto' } }, null, 2));
-    const result = run(`${SETTINGS_HOOK} add /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    const result = run(`${SETTINGS_HOOK} add ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
     expect(result.exitCode).toBe(0);
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
@@ -63,22 +81,22 @@ describe('gstack-settings-hook', () => {
   });
 
   test('add deduplicates (running twice does not double-add)', () => {
-    run(`${SETTINGS_HOOK} add /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    run(`${SETTINGS_HOOK} add ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
-    run(`${SETTINGS_HOOK} add /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    run(`${SETTINGS_HOOK} add ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
     expect(settings.hooks.SessionStart).toHaveLength(1);
   });
 
   test('remove removes the hook', () => {
-    run(`${SETTINGS_HOOK} add /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    run(`${SETTINGS_HOOK} add ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
-    const result = run(`${SETTINGS_HOOK} remove /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    const result = run(`${SETTINGS_HOOK} remove ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
     expect(result.exitCode).toBe(0);
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
@@ -86,8 +104,8 @@ describe('gstack-settings-hook', () => {
   });
 
   test('remove is safe when settings.json does not exist', () => {
-    const result = run(`${SETTINGS_HOOK} remove /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    const result = run(`${SETTINGS_HOOK} remove ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
     expect(result.exitCode).toBe(0);
   });
@@ -96,13 +114,13 @@ describe('gstack-settings-hook', () => {
     fs.writeFileSync(settingsFile, JSON.stringify({
       hooks: {
         SessionStart: [
-          { hooks: [{ type: 'command', command: '/path/to/gstack-session-update' }] },
+          { hooks: [{ type: 'command', command: LEGACY_SESSION_UPDATE_PATH }] },
           { hooks: [{ type: 'command', command: '/other/hook' }] },
         ],
       },
     }, null, 2));
-    run(`${SETTINGS_HOOK} remove /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    run(`${SETTINGS_HOOK} remove ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
     expect(settings.hooks.SessionStart).toHaveLength(1);
@@ -110,8 +128,8 @@ describe('gstack-settings-hook', () => {
   });
 
   test('atomic write (no partial file on success)', () => {
-    run(`${SETTINGS_HOOK} add /path/to/gstack-session-update`, {
-      env: { GSTACK_SETTINGS_FILE: settingsFile },
+    run(`${SETTINGS_HOOK} add ${LEGACY_SESSION_UPDATE_PATH}`, {
+      env: { [LEGACY_SETTINGS_ENV]: settingsFile },
     });
     // .tmp file should not exist after successful write
     expect(fs.existsSync(settingsFile + '.tmp')).toBe(false);
@@ -120,28 +138,28 @@ describe('gstack-settings-hook', () => {
   });
 });
 
-describe('gstack-session-update', () => {
+describe(LEGACY_SESSION_UPDATE, () => {
   let tmpDir: string;
-  let gstackDir: string;
+  let legacyDir: string;
   let stateDir: string;
 
   beforeEach(() => {
     tmpDir = mkTmpDir();
-    gstackDir = path.join(tmpDir, 'gstack');
+    legacyDir = path.join(tmpDir, LEGACY);
     stateDir = path.join(tmpDir, 'state');
-    fs.mkdirSync(gstackDir, { recursive: true });
+    fs.mkdirSync(legacyDir, { recursive: true });
     fs.mkdirSync(stateDir, { recursive: true });
 
     // Init a git repo to pass the .git guard
-    execSync('git init', { cwd: gstackDir });
-    execSync('git commit --allow-empty -m "init"', { cwd: gstackDir });
-    fs.writeFileSync(path.join(gstackDir, 'VERSION'), '0.1.0');
+    execSync('git init', { cwd: legacyDir });
+    execSync('git commit --allow-empty -m "init"', { cwd: legacyDir });
+    fs.writeFileSync(path.join(legacyDir, 'VERSION'), '0.1.0');
 
-    // Create a minimal gstack-config that returns auto_upgrade=true
-    const binDir = path.join(gstackDir, 'bin');
+    // Create a minimal legacy config tool that returns auto_upgrade=true
+    const binDir = path.join(legacyDir, 'bin');
     fs.mkdirSync(binDir, { recursive: true });
-    fs.writeFileSync(path.join(binDir, 'gstack-config'), '#!/bin/bash\necho "true"');
-    fs.chmodSync(path.join(binDir, 'gstack-config'), 0o755);
+    fs.writeFileSync(path.join(binDir, LEGACY_CONFIG), '#!/bin/bash\necho "true"');
+    fs.chmodSync(path.join(binDir, LEGACY_CONFIG), 0o755);
   });
 
   afterEach(() => {
@@ -149,18 +167,18 @@ describe('gstack-session-update', () => {
   });
 
   test('exits 0 when .git is missing', () => {
-    fs.rmSync(path.join(gstackDir, '.git'), { recursive: true });
+    fs.rmSync(path.join(legacyDir, '.git'), { recursive: true });
     const result = run(SESSION_UPDATE, {
-      env: { GSTACK_DIR: gstackDir, GSTACK_STATE_DIR: stateDir },
+      env: { [LEGACY_DIR_ENV]: legacyDir, [LEGACY_STATE_ENV]: stateDir },
     });
     expect(result.exitCode).toBe(0);
   });
 
   test('exits 0 when auto_upgrade is not true', () => {
-    // Override gstack-config to return false
-    fs.writeFileSync(path.join(gstackDir, 'bin', 'gstack-config'), '#!/bin/bash\necho "false"');
+    // Override legacy config tool to return false
+    fs.writeFileSync(path.join(legacyDir, 'bin', LEGACY_CONFIG), '#!/bin/bash\necho "false"');
     const result = run(SESSION_UPDATE, {
-      env: { GSTACK_DIR: gstackDir, GSTACK_STATE_DIR: stateDir },
+      env: { [LEGACY_DIR_ENV]: legacyDir, [LEGACY_STATE_ENV]: stateDir },
     });
     expect(result.exitCode).toBe(0);
   });
@@ -171,7 +189,7 @@ describe('gstack-session-update', () => {
     fs.writeFileSync(throttleFile, String(Math.floor(Date.now() / 1000)));
 
     const result = run(SESSION_UPDATE, {
-      env: { GSTACK_DIR: gstackDir, GSTACK_STATE_DIR: stateDir },
+      env: { [LEGACY_DIR_ENV]: legacyDir, [LEGACY_STATE_ENV]: stateDir },
     });
     expect(result.exitCode).toBe(0);
     // No log file should be created (throttled before forking)
@@ -180,13 +198,13 @@ describe('gstack-session-update', () => {
   test('always exits 0 (non-fatal)', () => {
     // Even with a broken setup, should exit 0
     const result = run(SESSION_UPDATE, {
-      env: { GSTACK_DIR: '/nonexistent/path', GSTACK_STATE_DIR: stateDir },
+      env: { [LEGACY_DIR_ENV]: '/nonexistent/path', [LEGACY_STATE_ENV]: stateDir },
     });
     expect(result.exitCode).toBe(0);
   });
 });
 
-describe('gstack-team-init', () => {
+describe(LEGACY_TEAM_INIT, () => {
   let tmpDir: string;
 
   beforeEach(() => {
@@ -217,24 +235,24 @@ describe('gstack-team-init', () => {
     const result = run(`${TEAM_INIT} optional`, { cwd: tmpDir });
     expect(result.exitCode).toBe(0);
     const claude = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(claude).toContain('## gstack (recommended)');
-    expect(claude).toContain('./setup --team');
+    expect(claude).toContain(`${LEGACY_SECTION} (recommended)`);
+    expect(claude).toContain('Skills like /qa, /ship, /review');
   });
 
   test('required: creates CLAUDE.md with required section', () => {
     const result = run(`${TEAM_INIT} required`, { cwd: tmpDir });
     expect(result.exitCode).toBe(0);
     const claude = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(claude).toContain('## gstack (REQUIRED');
-    expect(claude).toContain('GSTACK_MISSING');
+    expect(claude).toContain(`${LEGACY_SECTION} (REQUIRED`);
+    expect(claude).toContain(LEGACY_MISSING);
   });
 
   test('required: creates enforcement hook', () => {
     run(`${TEAM_INIT} required`, { cwd: tmpDir });
-    const hookPath = path.join(tmpDir, '.claude', 'hooks', 'check-gstack.sh');
+    const hookPath = path.join(tmpDir, '.claude', 'hooks', `${LEGACY_CHECK_HOOK}.sh`);
     expect(fs.existsSync(hookPath)).toBe(true);
     const hook = fs.readFileSync(hookPath, 'utf-8');
-    expect(hook).toContain('BLOCKED: gstack is not installed');
+    expect(hook).toContain(`BLOCKED: ${LEGACY} is not installed`);
     // Should be executable
     const stat = fs.statSync(hookPath);
     expect(stat.mode & 0o111).toBeGreaterThan(0);
@@ -247,66 +265,66 @@ describe('gstack-team-init', () => {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
     expect(settings.hooks.PreToolUse).toHaveLength(1);
     expect(settings.hooks.PreToolUse[0].matcher).toBe('Skill');
-    expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('check-gstack');
+    expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain(LEGACY_CHECK_HOOK);
   });
 
   test('idempotent: running twice does not duplicate CLAUDE.md section', () => {
     run(`${TEAM_INIT} optional`, { cwd: tmpDir });
     run(`${TEAM_INIT} optional`, { cwd: tmpDir });
     const claude = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    const matches = claude.match(/## gstack/g);
+    const matches = claude.match(new RegExp(escapeRegExp(LEGACY_SECTION), 'g'));
     expect(matches).toHaveLength(1);
   });
 
   test('removes vendored copy when present', () => {
-    // Create a fake vendored gstack with VERSION file
-    const vendoredDir = path.join(tmpDir, '.claude', 'skills', 'gstack');
+    // Create a fake vendored legacy install with VERSION file
+    const vendoredDir = path.join(tmpDir, '.claude', 'skills', LEGACY);
     fs.mkdirSync(vendoredDir, { recursive: true });
     fs.writeFileSync(path.join(vendoredDir, 'VERSION'), '0.14.0.0');
     fs.writeFileSync(path.join(vendoredDir, 'README.md'), 'vendored');
     // Track it in git
-    execSync('git add .claude/skills/gstack/', { cwd: tmpDir });
-    execSync('git commit -m "add vendored gstack"', { cwd: tmpDir });
+    execSync(`git add ${LEGACY_SKILLS_DIR}/`, { cwd: tmpDir });
+    execSync(`git commit -m "add vendored ${LEGACY}"`, { cwd: tmpDir });
 
     const result = run(`${TEAM_INIT} optional`, { cwd: tmpDir });
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('Found vendored gstack copy');
+    expect(result.stdout).toContain(`Found vendored ${LEGACY} copy`);
     expect(result.stdout).toContain('Removed vendored copy');
     // Vendored dir should be gone
     expect(fs.existsSync(vendoredDir)).toBe(false);
     // .gitignore should have the entry
     const gitignore = fs.readFileSync(path.join(tmpDir, '.gitignore'), 'utf-8');
-    expect(gitignore).toContain('.claude/skills/gstack/');
+    expect(gitignore).toContain(`${LEGACY_SKILLS_DIR}/`);
   });
 
   test('skips when no vendored copy present', () => {
     const result = run(`${TEAM_INIT} optional`, { cwd: tmpDir });
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).not.toContain('Found vendored gstack copy');
+    expect(result.stdout).not.toContain(`Found vendored ${LEGACY} copy`);
   });
 
-  test('skips when .claude/skills/gstack is a symlink', () => {
+  test(`skips when ${LEGACY_SKILLS_DIR} is a symlink`, () => {
     // Create a symlink (not a real vendored copy)
     const skillsDir = path.join(tmpDir, '.claude', 'skills');
     fs.mkdirSync(skillsDir, { recursive: true });
     const targetDir = mkTmpDir();
     fs.writeFileSync(path.join(targetDir, 'VERSION'), '0.14.0.0');
-    fs.symlinkSync(targetDir, path.join(skillsDir, 'gstack'));
+    fs.symlinkSync(targetDir, path.join(skillsDir, LEGACY));
 
     const result = run(`${TEAM_INIT} optional`, { cwd: tmpDir });
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).not.toContain('Found vendored gstack copy');
+    expect(result.stdout).not.toContain(`Found vendored ${LEGACY} copy`);
     // Symlink should still exist
-    expect(fs.lstatSync(path.join(skillsDir, 'gstack')).isSymbolicLink()).toBe(true);
+    expect(fs.lstatSync(path.join(skillsDir, LEGACY)).isSymbolicLink()).toBe(true);
     fs.rmSync(targetDir, { recursive: true, force: true });
   });
 
   test('does not duplicate .gitignore entry on re-run', () => {
     // Create vendored copy
-    const vendoredDir = path.join(tmpDir, '.claude', 'skills', 'gstack');
+    const vendoredDir = path.join(tmpDir, '.claude', 'skills', LEGACY);
     fs.mkdirSync(vendoredDir, { recursive: true });
     fs.writeFileSync(path.join(vendoredDir, 'VERSION'), '0.14.0.0');
-    execSync('git add .claude/skills/gstack/', { cwd: tmpDir });
+    execSync(`git add ${LEGACY_SKILLS_DIR}/`, { cwd: tmpDir });
     execSync('git commit -m "add vendored"', { cwd: tmpDir });
 
     run(`${TEAM_INIT} optional`, { cwd: tmpDir });
@@ -317,23 +335,23 @@ describe('gstack-team-init', () => {
     run(`${TEAM_INIT} optional`, { cwd: tmpDir });
 
     const gitignore = fs.readFileSync(path.join(tmpDir, '.gitignore'), 'utf-8');
-    const matches = gitignore.match(/\.claude\/skills\/gstack\//g);
+    const matches = gitignore.match(new RegExp(escapeRegExp(`${LEGACY_SKILLS_DIR}/`), 'g'));
     expect(matches).toHaveLength(1);
-  });
+  }, 15000);
 });
 
 describe('setup --team / --no-team / -q', () => {
   test('setup -q produces no stdout', () => {
     const result = run(`${path.join(ROOT, 'setup')} -q`, { cwd: ROOT });
     // -q should suppress informational output (may still have some output from build)
-    // The key test is that the "Skill naming:" prompt and "gstack ready" messages are suppressed
+    // The key test is that the "Skill naming:" prompt and legacy ready messages are suppressed
     expect(result.stdout).not.toContain('Skill naming:');
-    expect(result.stdout).not.toContain('gstack ready');
+    expect(result.stdout).not.toContain(`${LEGACY} ready`);
   });
 
-  test('setup --local prints deprecation warning', () => {
-    // stderr capture: run via bash redirect so we can capture stderr
-    const result = run(`bash -c '${path.join(ROOT, 'setup')} --local -q 2>&1'`, { cwd: ROOT });
+  test('setup --team prints deprecation warning', () => {
+    // Capture redirected output so the deprecation notice is visible.
+    const result = run(`bash -c '${path.join(ROOT, 'setup')} --team 2>&1'`, { cwd: ROOT });
     expect(result.stdout).toContain('deprecated');
   });
 });

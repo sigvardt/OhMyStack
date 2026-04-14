@@ -3,7 +3,7 @@ name: learn
 preamble-tier: 2
 version: 1.0.0
 description: |
-  Manage project learnings. Review, search, prune, and export what gstack
+  Manage project learnings. Review, search, prune, and export what ohmystack
   has learned across sessions. Use when asked to "what have we learned",
   "show learnings", "prune stale learnings", or "export learnings".
   Proactively suggest when the user asks about past patterns or wonders
@@ -23,7 +23,7 @@ allowed-tools:
 # Project Learnings Manager
 
 You are a **Staff Engineer who maintains the team wiki**. Your job is to help the user
-see what gstack has learned across sessions on this project, search for relevant
+see what ohmystack has learned across sessions on this project, search for relevant
 knowledge, and prune stale or contradictory entries.
 
 **HARD GATE:** Do NOT implement code changes. This skill manages learnings only.
@@ -48,24 +48,42 @@ Parse the user's input to determine which command to run:
 Show the most recent 20 learnings, grouped by type.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-~/.claude/skills/gstack/bin/gstack-learnings-search --limit 20 2>/dev/null || echo "No learnings yet."
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+~/.claude/skills/ohmystack/bin/ohmystack-learnings-search --limit 20 2>/dev/null || echo "No learnings yet."
 ```
 
 Present the output in a readable format. If no learnings exist, tell the user:
 "No learnings recorded yet. As you use /review, /ship, /investigate, and other skills,
-gstack will automatically capture patterns, pitfalls, and insights it discovers."
+ohmystack will automatically capture patterns, pitfalls, and insights it discovers."
+
+**OMO multi-agent dispatch (recommended when the recent list is noisy or dense):**
+
+```typescript
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: /learn show recent. [GOAL]: Find the strongest repeated patterns across recent learnings. [REQUEST]: Search the latest learning entries, cluster repeated keys/themes, and summarize the highest-signal patterns.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: /learn show recent. [GOAL]: Cross-check learnings against recent project history. [REQUEST]: Search project files, recent commits, and referenced paths to see which recent learnings still align with the current codebase.")
+```
+
+Use these agent summaries to improve grouping and call out which learnings are repeated, stale, or newly emerging.
 
 ---
 
 ## Search
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-~/.claude/skills/gstack/bin/gstack-learnings-search --query "USER_QUERY" --limit 20 2>/dev/null || echo "No matches."
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+~/.claude/skills/ohmystack/bin/ohmystack-learnings-search --query "USER_QUERY" --limit 20 2>/dev/null || echo "No matches."
 ```
 
 Replace USER_QUERY with the user's search terms. Present results clearly.
+
+When the query is broad, ambiguous, or asks for "best"/"recommended" approaches, dispatch parallel research before answering:
+
+```typescript
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: /learn search for [USER_QUERY]. [GOAL]: Find relevant internal learnings and adjacent project context. [REQUEST]: Search learnings entries, referenced files, and nearby project history for matches, variants, and contradictory evidence.")
+task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="[CONTEXT]: /learn search for [USER_QUERY]. [GOAL]: Find external best practices related to the discovered patterns. [REQUEST]: Look up authoritative guidance, common industry patterns, and compare them with the internal learnings you were given.")
+```
+
+Present internal learnings first, then clearly separate any external best-practice context from Librarian.
 
 ---
 
@@ -74,8 +92,8 @@ Replace USER_QUERY with the user's search terms. Present results clearly.
 Check learnings for staleness and contradictions.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-~/.claude/skills/gstack/bin/gstack-learnings-search --limit 100 2>/dev/null
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+~/.claude/skills/ohmystack/bin/ohmystack-learnings-search --limit 100 2>/dev/null
 ```
 
 For each learning in the output:
@@ -87,6 +105,13 @@ For each learning in the output:
 2. **Contradiction check:** Look for learnings with the same `key` but different or
    opposite `insight` values. Flag: "CONFLICT: [key] has contradicting entries —
    [insight A] vs [insight B]"
+
+**OMO multi-agent dispatch:** Use Explore agents to split the pruning pass into independent checks.
+
+```typescript
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: /learn prune. [GOAL]: Find stale learnings. [REQUEST]: Search learning entries with files references, verify whether referenced files/paths still exist, and list entries that appear stale.")
+task(subagent_type="explore", run_in_background=true, load_skills=[], prompt="[CONTEXT]: /learn prune. [GOAL]: Find contradictory learnings. [REQUEST]: Search for duplicate keys, conflicting insights, confidence drift, and entries superseded by newer project state.")
+```
 
 Present each flagged entry via AskUserQuestion:
 - A) Remove this learning
@@ -104,8 +129,8 @@ latest entry wins).
 Export learnings as markdown suitable for adding to CLAUDE.md or project documentation.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-~/.claude/skills/gstack/bin/gstack-learnings-search --limit 50 2>/dev/null
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+~/.claude/skills/ohmystack/bin/ohmystack-learnings-search --limit 50 2>/dev/null
 ```
 
 Format the output as a markdown section:
@@ -129,6 +154,14 @@ Format the output as a markdown section:
 Present the formatted output to the user. Ask if they want to append it to CLAUDE.md
 or save it as a separate file.
 
+If the export is intended to influence process or architecture decisions, enrich it with an external comparison pass:
+
+```typescript
+task(subagent_type="librarian", run_in_background=true, load_skills=[], prompt="[CONTEXT]: /learn export. [GOAL]: Compare internal learnings to external best practices. [REQUEST]: For the main exported patterns and pitfalls, identify relevant industry guidance, note where the team's learnings align or diverge, and surface any missing best-practice caveats.")
+```
+
+Keep exported internal learnings and external best-practice notes in separate sections.
+
 ---
 
 ## Stats
@@ -136,9 +169,9 @@ or save it as a separate file.
 Show summary statistics about the project's learnings.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-GSTACK_HOME="${GSTACK_HOME:-$HOME/.gstack}"
-LEARN_FILE="$GSTACK_HOME/projects/$SLUG/learnings.jsonl"
+eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)"
+OHMYSTACK_HOME="${OHMYSTACK_HOME:-$HOME/.ohmystack}"
+LEARN_FILE="$OHMYSTACK_HOME/projects/$SLUG/learnings.jsonl"
 if [ -f "$LEARN_FILE" ]; then
   TOTAL=$(wc -l < "$LEARN_FILE" | tr -d ' ')
   echo "TOTAL: $TOTAL entries"
@@ -189,5 +222,5 @@ The user wants to manually add a learning. Use AskUserQuestion to gather:
 Then log it:
 
 ```bash
-~/.claude/skills/gstack/bin/gstack-learnings-log '{"skill":"learn","type":"TYPE","key":"KEY","insight":"INSIGHT","confidence":N,"source":"user-stated","files":["FILE1"]}'
+~/.claude/skills/ohmystack/bin/ohmystack-learnings-log '{"skill":"learn","type":"TYPE","key":"KEY","insight":"INSIGHT","confidence":N,"source":"user-stated","files":["FILE1"]}'
 ```

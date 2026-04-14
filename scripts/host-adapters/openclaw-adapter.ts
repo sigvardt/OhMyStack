@@ -20,23 +20,25 @@ import type { HostConfig } from '../host-config';
  */
 export function transform(content: string, _config: HostConfig): string {
   let result = content;
+  const replaceAll = (source: string, search: string, replacement: string): string =>
+    source.split(search).join(replacement);
 
   // 1. AskUserQuestion references → prose
-  result = result.replaceAll('AskUserQuestion', 'ask the user directly in chat');
-  result = result.replaceAll('Use AskUserQuestion', 'Ask the user directly');
-  result = result.replaceAll('use AskUserQuestion', 'ask the user directly');
+  result = replaceAll(result, 'AskUserQuestion', 'ask the user directly in chat');
+  result = replaceAll(result, 'Use AskUserQuestion', 'Ask the user directly');
+  result = replaceAll(result, 'use AskUserQuestion', 'ask the user directly');
 
   // 2. Agent tool references → sessions_spawn
-  result = result.replaceAll('the Agent tool', 'sessions_spawn');
-  result = result.replaceAll('Agent tool', 'sessions_spawn');
-  result = result.replaceAll('subagent_type', 'task parameter');
+  result = replaceAll(result, 'the Agent tool', 'sessions_spawn');
+  result = replaceAll(result, 'Agent tool', 'sessions_spawn');
+  result = replaceAll(result, 'subagent_type', 'task parameter');
 
   // 3. Browse binary patterns
-  result = result.replaceAll('`$B ', '`exec $B ');
+  result = replaceAll(result, '`$B ', '`exec $B ');
 
-  // 4. Strip gstack binary references that won't exist on OpenClaw
+  // 4. Strip OhMyStack binary references that won't exist on OpenClaw
   // These are preamble utilities — OpenClaw doesn't use them
-  result = result.replace(/~\/\.openclaw\/skills\/gstack\/bin\/gstack-[\w-]+/g, (match) => {
+  result = result.replace(/~\/\.openclaw\/skills\/ohmystack\/bin\/ohmystack-[\w-]+/g, (match) => {
     // Keep the reference but note it as exec-based
     return match;
   });
