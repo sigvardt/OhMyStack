@@ -213,7 +213,7 @@ ohmystack works well with one sprint. It gets interesting with ten running at on
 
 **`/design-html` makes it real.** Take that approved mockup (from `/design-shotgun`, a CEO plan, a design review, or just a description) and turn it into production-quality HTML/CSS. Not the kind of AI HTML that looks fine at one viewport width and breaks everywhere else. This uses Pretext for computed text layout: text actually reflows on resize, heights adjust to content, layouts are dynamic. 30KB overhead, zero dependencies. It detects your framework (React, Svelte, Vue) and outputs the right format. Smart API routing picks different Pretext patterns depending on whether it's a landing page, dashboard, form, or card layout. The output is something you'd actually ship, not a demo.
 
-**`/qa` was a massive unlock.** It let me go from 6 to 12 parallel workers. Claude Code saying *"I SEE THE ISSUE"* and then actually fixing it, generating a regression test, and verifying the fix — that changed how I work. The agent has eyes now.
+**`/qa` is a massive unlock.** It enables parallel workflows at scale. The agent sees the issue, actually fixes it, generates a regression test, and verifies the fix — all automatically.
 
 **Smart review routing.** Just like at a well-run startup: CEO doesn't have to look at infra bug fixes, design review isn't needed for backend changes. ohmystack tracks what reviews are run, figures out what's appropriate, and just does the smart thing. The Review Readiness Dashboard tells you where you stand before you ship.
 
@@ -241,7 +241,7 @@ ohmystack works well with one sprint. It gets interesting with ten running at on
 
 ohmystack is powerful with one sprint. It is transformative with ten running at once.
 
-[Conductor](https://conductor.build) runs multiple Claude Code sessions in parallel — each in its own isolated workspace. One session running `/office-hours` on a new idea, another doing `/review` on a PR, a third implementing a feature, a fourth running `/qa` on staging, and six more on other branches. All at the same time. I regularly run 10-15 parallel sprints — that's the practical max right now.
+[Conductor](https://conductor.build) runs multiple Claude Code sessions in parallel — each in its own isolated workspace. One session running `/office-hours` on a new idea, another doing `/review` on a PR, a third implementing a feature, a fourth running `/qa` on staging, and six more on other branches. All at the same time. 10-15 parallel sprints is the practical max right now.
 
 The sprint structure is what makes parallelism work. Without a process, ten agents is ten sources of chaos. With a process — think, plan, build, review, test, ship — each agent knows exactly what to do and when to stop. You manage them the way a CEO manages a team: check in on the decisions that matter, let the rest run.
 
@@ -308,11 +308,7 @@ The uninstall script does not edit CLAUDE.md. In each project where ohmystack wa
 
 Free, MIT licensed, open source. No premium tier, no waitlist.
 
-I open sourced how I build software. You can fork it and make it your own.
-
-> **We're hiring.** Want to ship 10K+ LOC/day and help harden ohmystack?
-> Come work at YC — [ycombinator.com/software](https://ycombinator.com/software)
-> Extremely competitive salary and equity. San Francisco, Dogpatch District.
+Free and open source. Fork it and make it your own.
 
 ## Docs
 
