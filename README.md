@@ -1,14 +1,8 @@
 # OhMyStack
 
-> "I don't think I've typed like a line of code probably since December, basically, which is an extremely large change." — [Andrej Karpathy](https://fortune.com/2026/03/21/andrej-karpathy-openai-cofounder-ai-agents-coding-state-of-psychosis-openclaw/), No Priors podcast, March 2026
+OhMyStack is a fork of [GStack](https://github.com/garrytan/gstack) by Garry Tan, adapted for the **Oh My OpenAgent** ecosystem.
 
-When I heard Karpathy say this, I wanted to find out how. How does one person ship like a team of twenty? Peter Steinberger built [OpenClaw](https://github.com/openclaw/openclaw) — 247K GitHub stars — essentially solo with AI agents. The revolution is here. A single builder with the right tooling can move faster than a traditional team.
-
-Forked from [GStack](https://github.com/garrytan/gstack) by Garry Tan, adapted for Oh My OpenAgent
-
-OhMyStack is a fork of [GStack](https://github.com/garrytan/gstack) adapted for the **Oh My OpenAgent** ecosystem. It turns AI coding assistants into virtual engineering teams using OMO's multi-agent dispatch — named agents (Explore, Oracle, Metis, Momus, Librarian) that collaborate on planning, review, QA, and shipping.
-
-**OhMyStack is how OMO does it.** It provides twenty-five specialist skills and eight power tools, all slash commands, all Markdown, all free, MIT license.
+It turns AI coding assistants into virtual engineering teams using OMO's multi-agent dispatch — named agents (Explore, Oracle, Metis, Momus, Librarian) that collaborate on planning, review, QA, and shipping. Twenty-five specialist skills and eight power tools, all slash commands, all Markdown, MIT license.
 
 **Who this is for:**
 - **Founders and CEOs** — especially technical ones who still want to ship
