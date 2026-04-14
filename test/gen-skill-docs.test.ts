@@ -66,7 +66,7 @@ describe('gen-skill-docs', () => {
   });
 
   test('generated files have auto-generated header and no unresolved placeholders', () => {
-    const files = [path.join(ROOT, 'SKILL.md'), path.join(ROOT, 'browse', 'SKILL.md')];
+    const files = [path.join(ROOT, 'SKILL.md')];
     for (const skillDir of listGeneratedOpencodeSkills()) {
       files.push(path.join(OPENCODE_SKILLS_DIR, skillDir, 'SKILL.md'));
     }
@@ -79,7 +79,7 @@ describe('gen-skill-docs', () => {
   });
 
   test('generated files have valid frontmatter with bounded descriptions', () => {
-    const files = [path.join(ROOT, 'SKILL.md'), path.join(ROOT, 'browse', 'SKILL.md')];
+    const files = [path.join(ROOT, 'SKILL.md')];
     for (const skillDir of listGeneratedOpencodeSkills()) {
       files.push(path.join(OPENCODE_SKILLS_DIR, skillDir, 'SKILL.md'));
     }

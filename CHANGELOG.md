@@ -8,7 +8,7 @@
 
 ### Added
 - Initial fork from GStack v0.16.4.0
-- Full rebrand: ohmystack → ohmystack
+- Full rebrand: gstack → ohmystack
 - OpenCode-only host support (7 unused hosts stripped)
 - OMO multi-agent dispatch in 25 skills (+ 4 native rebrand = 29 total)
 - Named agent patterns: Explore, Metis, Momus, Oracle, Librarian

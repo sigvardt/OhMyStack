@@ -1,17 +1,10 @@
 ---
 name: ohmystack
-preamble-tier: 1
-version: 1.1.0
 description: |
   Fast headless browser for QA testing and site dogfooding. Navigate pages, interact with
   elements, verify state, diff before/after, take annotated screenshots, test responsive
   layouts, forms, uploads, dialogs, and capture bug evidence. Use when asked to open or
   test a site, verify a deployment, dogfood a user flow, or file a bug with screenshots. (ohmystack)
-allowed-tools:
-  - Bash
-  - Read
-  - AskUserQuestion
-
 ---
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
@@ -19,26 +12,32 @@ allowed-tools:
 ## Preamble (run first)
 
 ```bash
-_UPD=$(~/.claude/skills/ohmystack/bin/ohmystack-update-check 2>/dev/null || .claude/skills/ohmystack/bin/ohmystack-update-check 2>/dev/null || true)
+_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+OHMYSTACK_ROOT="$HOME/.config/opencode/skills/ohmystack"
+[ -n "$_ROOT" ] && [ -d "$_ROOT/.opencode/skills/ohmystack" ] && OHMYSTACK_ROOT="$_ROOT/.opencode/skills/ohmystack"
+OHMYSTACK_BIN="$OHMYSTACK_ROOT/bin"
+OHMYSTACK_BROWSE="$OHMYSTACK_ROOT/browse/dist"
+OHMYSTACK_DESIGN="$OHMYSTACK_ROOT/design/dist"
+_UPD=$($OHMYSTACK_BIN/ohmystack-update-check 2>/dev/null || .opencode/skills/ohmystack/bin/ohmystack-update-check 2>/dev/null || true)
 [ -n "$_UPD" ] && echo "$_UPD" || true
 mkdir -p ~/.ohmystack/sessions
 touch ~/.ohmystack/sessions/"$PPID"
 _SESSIONS=$(find ~/.ohmystack/sessions -mmin -120 -type f 2>/dev/null | wc -l | tr -d ' ')
 find ~/.ohmystack/sessions -mmin +120 -type f -exec rm {} + 2>/dev/null || true
-_PROACTIVE=$(~/.claude/skills/ohmystack/bin/ohmystack-config get proactive 2>/dev/null || echo "true")
+_PROACTIVE=$($OHMYSTACK_BIN/ohmystack-config get proactive 2>/dev/null || echo "true")
 _PROACTIVE_PROMPTED=$([ -f ~/.ohmystack/.proactive-prompted ] && echo "yes" || echo "no")
 _BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 echo "BRANCH: $_BRANCH"
-_SKILL_PREFIX=$(~/.claude/skills/ohmystack/bin/ohmystack-config get skill_prefix 2>/dev/null || echo "false")
+_SKILL_PREFIX=$($OHMYSTACK_BIN/ohmystack-config get skill_prefix 2>/dev/null || echo "false")
 echo "PROACTIVE: $_PROACTIVE"
 echo "PROACTIVE_PROMPTED: $_PROACTIVE_PROMPTED"
 echo "SKILL_PREFIX: $_SKILL_PREFIX"
-source <(~/.claude/skills/ohmystack/bin/ohmystack-repo-mode 2>/dev/null) || true
+source <($OHMYSTACK_BIN/ohmystack-repo-mode 2>/dev/null) || true
 REPO_MODE=${REPO_MODE:-unknown}
 echo "REPO_MODE: $REPO_MODE"
 _LAKE_SEEN=$([ -f ~/.ohmystack/.completeness-intro-seen ] && echo "yes" || echo "no")
 echo "LAKE_INTRO: $_LAKE_SEEN"
-_TEL=$(~/.claude/skills/ohmystack/bin/ohmystack-config get telemetry 2>/dev/null || true)
+_TEL=$($OHMYSTACK_BIN/ohmystack-config get telemetry 2>/dev/null || true)
 _TEL_PROMPTED=$([ -f ~/.ohmystack/.telemetry-prompted ] && echo "yes" || echo "no")
 _TEL_START=$(date +%s)
 _SESSION_ID="$$-$(date +%s)"
@@ -51,62 +50,60 @@ fi
 # zsh-compatible: use find instead of glob to avoid NOMATCH error
 for _PF in $(find ~/.ohmystack/analytics -maxdepth 1 -name '.pending-*' 2>/dev/null); do
   if [ -f "$_PF" ]; then
-    if [ "$_TEL" != "off" ] && [ -x "~/.claude/skills/ohmystack/bin/ohmystack-telemetry-log" ]; then
-      ~/.claude/skills/ohmystack/bin/ohmystack-telemetry-log --event-type skill_run --skill _pending_finalize --outcome unknown --session-id "$_SESSION_ID" 2>/dev/null || true
-    fi
+    # telemetry disabled in OhMyStack
     rm -f "$_PF" 2>/dev/null || true
   fi
   break
 done
 # Learnings count
-eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)" 2>/dev/null || true
-_LEARN_FILE="${GSTACK_HOME:-$HOME/.ohmystack}/projects/${SLUG:-unknown}/learnings.jsonl"
+eval "$($OHMYSTACK_BIN/ohmystack-slug 2>/dev/null)" 2>/dev/null || true
+_LEARN_FILE="${OHMYSTACK_HOME:-$HOME/.ohmystack}/projects/${SLUG:-unknown}/learnings.jsonl"
 if [ -f "$_LEARN_FILE" ]; then
   _LEARN_COUNT=$(wc -l < "$_LEARN_FILE" 2>/dev/null | tr -d ' ')
   echo "LEARNINGS: $_LEARN_COUNT entries loaded"
   if [ "$_LEARN_COUNT" -gt 5 ] 2>/dev/null; then
-    ~/.claude/skills/ohmystack/bin/ohmystack-learnings-search --limit 3 2>/dev/null || true
+    $OHMYSTACK_BIN/ohmystack-learnings-search --limit 3 2>/dev/null || true
   fi
 else
   echo "LEARNINGS: 0"
 fi
 # Session timeline: record skill start (local-only, never sent anywhere)
-~/.claude/skills/ohmystack/bin/ohmystack-timeline-log '{"skill":"ohmystack","event":"started","branch":"'"$_BRANCH"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null &
+$OHMYSTACK_BIN/ohmystack-timeline-log '{"skill":"ohmystack","event":"started","branch":"'"$_BRANCH"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null &
 # Check if CLAUDE.md has routing rules
 _HAS_ROUTING="no"
 if [ -f CLAUDE.md ] && grep -q "## Skill routing" CLAUDE.md 2>/dev/null; then
   _HAS_ROUTING="yes"
 fi
-_ROUTING_DECLINED=$(~/.claude/skills/ohmystack/bin/ohmystack-config get routing_declined 2>/dev/null || echo "false")
+_ROUTING_DECLINED=$($OHMYSTACK_BIN/ohmystack-config get routing_declined 2>/dev/null || echo "false")
 echo "HAS_ROUTING: $_HAS_ROUTING"
 echo "ROUTING_DECLINED: $_ROUTING_DECLINED"
-# Vendoring deprecation: detect if CWD has a vendored ohmystack copy
+# Vendoring deprecation: detect if CWD has a vendored OhMyStack copy
 _VENDORED="no"
-if [ -d ".claude/skills/ohmystack" ] && [ ! -L ".claude/skills/ohmystack" ]; then
-  if [ -f ".claude/skills/ohmystack/VERSION" ] || [ -d ".claude/skills/ohmystack/.git" ]; then
+if [ -d ".opencode/skills/ohmystack" ] && [ ! -L ".opencode/skills/ohmystack" ]; then
+  if [ -f ".opencode/skills/ohmystack/VERSION" ] || [ -d ".opencode/skills/ohmystack/.git" ]; then
     _VENDORED="yes"
   fi
 fi
-echo "VENDORED_GSTACK: $_VENDORED"
+echo "VENDORED_OHMYSTACK: $_VENDORED"
 # Detect spawned session (OpenClaw or other orchestrator)
 [ -n "$OPENCLAW_SESSION" ] && echo "SPAWNED_SESSION: true" || true
 ```
 
-If `PROACTIVE` is `"false"`, do not proactively suggest ohmystack skills AND do not
+If `PROACTIVE` is `"false"`, do not proactively suggest OhMyStack skills AND do not
 auto-invoke skills based on conversation context. Only run skills the user explicitly
 types (e.g., /qa, /ship). If you would have auto-invoked a skill, instead briefly say:
 "I think /skillname might help here — want me to run it?" and wait for confirmation.
 The user opted out of proactive behavior.
 
 If `SKILL_PREFIX` is `"true"`, the user has namespaced skill names. When suggesting
-or invoking other ohmystack skills, use the `/ohmystack-` prefix (e.g., `/ohmystack-qa` instead
+or invoking other OhMyStack skills, use the `/ohmystack-` prefix (e.g., `/ohmystack-qa` instead
 of `/qa`, `/ohmystack-ship` instead of `/ship`). Disk paths are unaffected — always use
-`~/.claude/skills/ohmystack/[skill-name]/SKILL.md` for reading skill files.
+`$OHMYSTACK_ROOT/[skill-name]/SKILL.md` for reading skill files.
 
-If output shows `UPGRADE_AVAILABLE <old> <new>`: read `~/.claude/skills/ohmystack/ohmystack-upgrade/SKILL.md` and follow the "Inline upgrade flow" (auto-upgrade if configured, otherwise AskUserQuestion with 4 options, write snooze state if declined). If `JUST_UPGRADED <from> <to>`: tell user "Running ohmystack v{to} (just updated!)" and continue.
+If output shows `UPGRADE_AVAILABLE <old> <new>`: read `$OHMYSTACK_ROOT/ohmystack-upgrade/SKILL.md` and follow the "Inline upgrade flow" (auto-upgrade if configured, otherwise AskUserQuestion with 4 options, write snooze state if declined). If `JUST_UPGRADED <from> <to>`: tell user "Running OhMyStack v{to} (just updated!)" and continue.
 
 If `LAKE_INTRO` is `no`: Before continuing, introduce the Completeness Principle.
-Tell the user: "ohmystack follows the **Boil the Lake** principle — always do the complete
+Tell the user: "OhMyStack follows the **Boil the Lake** principle — always do the complete
 thing when AI makes the marginal cost near-zero. Read more: https://garryslist.org/posts/boil-the-ocean"
 Then offer to open the essay in their default browser:
 
@@ -120,28 +117,28 @@ Only run `open` if the user says yes. Always run `touch` to mark as seen. This o
 If `TEL_PROMPTED` is `no` AND `LAKE_INTRO` is `yes`: After the lake intro is handled,
 ask the user about telemetry. Use AskUserQuestion:
 
-> Help ohmystack get better! Community mode shares usage data (which skills you use, how long
+> Help OhMyStack get better! Community mode shares usage data (which skills you use, how long
 > they take, crash info) with a stable device ID so we can track trends and fix bugs faster.
 > No code, file paths, or repo names are ever sent.
 > Change anytime with `ohmystack-config set telemetry off`.
 
 Options:
-- A) Help ohmystack get better! (recommended)
+- A) Help OhMyStack get better! (recommended)
 - B) No thanks
 
-If A: run `~/.claude/skills/ohmystack/bin/ohmystack-config set telemetry community`
+If A: run `$OHMYSTACK_BIN/ohmystack-config set telemetry community`
 
 If B: ask a follow-up AskUserQuestion:
 
-> How about anonymous mode? We just learn that *someone* used ohmystack — no unique ID,
+> How about anonymous mode? We just learn that *someone* used OhMyStack — no unique ID,
 > no way to connect sessions. Just a counter that helps us know if anyone's out there.
 
 Options:
 - A) Sure, anonymous is fine
 - B) No thanks, fully off
 
-If B→A: run `~/.claude/skills/ohmystack/bin/ohmystack-config set telemetry anonymous`
-If B→B: run `~/.claude/skills/ohmystack/bin/ohmystack-config set telemetry off`
+If B→A: run `$OHMYSTACK_BIN/ohmystack-config set telemetry anonymous`
+If B→B: run `$OHMYSTACK_BIN/ohmystack-config set telemetry off`
 
 Always run:
 ```bash
@@ -153,7 +150,7 @@ This only happens once. If `TEL_PROMPTED` is `yes`, skip this entirely.
 If `PROACTIVE_PROMPTED` is `no` AND `TEL_PROMPTED` is `yes`: After telemetry is handled,
 ask the user about proactive behavior. Use AskUserQuestion:
 
-> ohmystack can proactively figure out when you might need a skill while you work —
+> OhMyStack can proactively figure out when you might need a skill while you work —
 > like suggesting /qa when you say "does this work?" or /investigate when you hit
 > a bug. We recommend keeping this on — it speeds up every part of your workflow.
 
@@ -161,8 +158,8 @@ Options:
 - A) Keep it on (recommended)
 - B) Turn it off — I'll type /commands myself
 
-If A: run `~/.claude/skills/ohmystack/bin/ohmystack-config set proactive true`
-If B: run `~/.claude/skills/ohmystack/bin/ohmystack-config set proactive false`
+If A: run `$OHMYSTACK_BIN/ohmystack-config set proactive true`
+If B: run `$OHMYSTACK_BIN/ohmystack-config set proactive false`
 
 Always run:
 ```bash
@@ -176,7 +173,7 @@ Check if a CLAUDE.md file exists in the project root. If it does not exist, crea
 
 Use AskUserQuestion:
 
-> ohmystack works best when your project's CLAUDE.md includes skill routing rules.
+> OhMyStack works best when your project's CLAUDE.md includes skill routing rules.
 > This tells Claude to use specialized workflows (like /ship, /investigate, /qa)
 > instead of answering directly. It's a one-time addition, about 15 lines.
 
@@ -209,20 +206,20 @@ Key routing rules:
 - Code quality, health check → invoke health
 ```
 
-Then commit the change: `git add CLAUDE.md && git commit -m "chore: add ohmystack skill routing rules to CLAUDE.md"`
+Then commit the change: `git add CLAUDE.md && git commit -m "chore: add OhMyStack skill routing rules to CLAUDE.md"`
 
-If B: run `~/.claude/skills/ohmystack/bin/ohmystack-config set routing_declined true`
+If B: run `$OHMYSTACK_BIN/ohmystack-config set routing_declined true`
 Say "No problem. You can add routing rules later by running `ohmystack-config set routing_declined false` and re-running any skill."
 
 This only happens once per project. If `HAS_ROUTING` is `yes` or `ROUTING_DECLINED` is `true`, skip this entirely.
 
-If `VENDORED_GSTACK` is `yes`: This project has a vendored copy of ohmystack at
-`.claude/skills/ohmystack/`. Vendoring is deprecated. We will not keep vendored copies
-up to date, so this project's ohmystack will fall behind.
+If `VENDORED_OHMYSTACK` is `yes`: This project has a vendored copy of OhMyStack at
+`.opencode/skills/ohmystack/`. Vendoring is deprecated. We will not keep vendored copies
+up to date, so this project's OhMyStack will fall behind.
 
 Use AskUserQuestion (one-time per project, check for `~/.ohmystack/.vendoring-warned-$SLUG` marker):
 
-> This project has ohmystack vendored in `.claude/skills/ohmystack/`. Vendoring is deprecated.
+> This project has OhMyStack vendored in `.opencode/skills/ohmystack/`. Vendoring is deprecated.
 > We won't keep this copy up to date, so you'll fall behind on new features and fixes.
 >
 > Want to migrate to team mode? It takes about 30 seconds.
@@ -232,17 +229,17 @@ Options:
 - B) No, I'll handle it myself
 
 If A:
-1. Run `git rm -r .claude/skills/ohmystack/`
-2. Run `echo '.claude/skills/ohmystack/' >> .gitignore`
-3. Run `~/.claude/skills/ohmystack/bin/ohmystack-team-init required` (or `optional`)
-4. Run `git add .claude/ .gitignore CLAUDE.md && git commit -m "chore: migrate ohmystack from vendored to team mode"`
-5. Tell the user: "Done. Each developer now runs: `cd ~/.claude/skills/ohmystack && ./setup --team`"
+1. Run `git rm -r .opencode/skills/ohmystack/`
+2. Run `echo '.opencode/skills/ohmystack/' >> .gitignore`
+3. Run `$OHMYSTACK_BIN/ohmystack-team-init required` (or `optional`)
+4. Run `git add .opencode/ .gitignore CLAUDE.md && git commit -m "chore: migrate OhMyStack from vendored to team mode"`
+5. Tell the user: "Done. Each developer now runs: `cd ~/.config/opencode/skills/ohmystack && ./setup --team`"
 
 If B: say "OK, you're on your own to keep the vendored copy up to date."
 
 Always run (regardless of choice):
 ```bash
-eval "$(~/.claude/skills/ohmystack/bin/ohmystack-slug 2>/dev/null)" 2>/dev/null || true
+eval "$($OHMYSTACK_BIN/ohmystack-slug 2>/dev/null)" 2>/dev/null || true
 touch ~/.ohmystack/.vendoring-warned-${SLUG:-unknown}
 ```
 
@@ -299,7 +296,7 @@ Before completing, reflect on this session:
 If yes, log an operational learning for future sessions:
 
 ```bash
-~/.claude/skills/ohmystack/bin/ohmystack-learnings-log '{"skill":"SKILL_NAME","type":"operational","key":"SHORT_KEY","insight":"DESCRIPTION","confidence":N,"source":"observed"}'
+$OHMYSTACK_BIN/ohmystack-learnings-log '{"skill":"SKILL_NAME","type":"operational","key":"SHORT_KEY","insight":"DESCRIPTION","confidence":N,"source":"observed"}'
 ```
 
 Replace SKILL_NAME with the current skill name. Only log genuine operational discoveries.
@@ -325,17 +322,13 @@ _TEL_END=$(date +%s)
 _TEL_DUR=$(( _TEL_END - _TEL_START ))
 rm -f ~/.ohmystack/analytics/.pending-"$_SESSION_ID" 2>/dev/null || true
 # Session timeline: record skill completion (local-only, never sent anywhere)
-~/.claude/skills/ohmystack/bin/ohmystack-timeline-log '{"skill":"SKILL_NAME","event":"completed","branch":"'$(git branch --show-current 2>/dev/null || echo unknown)'","outcome":"OUTCOME","duration_s":"'"$_TEL_DUR"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null || true
+~/.config/opencode/skills/ohmystack/bin/ohmystack-timeline-log '{"skill":"SKILL_NAME","event":"completed","branch":"'$(git branch --show-current 2>/dev/null || echo unknown)'","outcome":"OUTCOME","duration_s":"'"$_TEL_DUR"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null || true
 # Local analytics (gated on telemetry setting)
 if [ "$_TEL" != "off" ]; then
 echo '{"skill":"SKILL_NAME","duration_s":"'"$_TEL_DUR"'","outcome":"OUTCOME","browse":"USED_BROWSE","session":"'"$_SESSION_ID"'","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' >> ~/.ohmystack/analytics/skill-usage.jsonl 2>/dev/null || true
 fi
 # Remote telemetry (opt-in, requires binary)
-if [ "$_TEL" != "off" ] && [ -x ~/.claude/skills/ohmystack/bin/ohmystack-telemetry-log ]; then
-  ~/.claude/skills/ohmystack/bin/ohmystack-telemetry-log \
-    --skill "SKILL_NAME" --duration "$_TEL_DUR" --outcome "OUTCOME" \
-    --used-browse "USED_BROWSE" --session-id "$_SESSION_ID" 2>/dev/null &
-fi
+# telemetry disabled in OhMyStack
 ```
 
 Replace `SKILL_NAME` with the actual skill name from frontmatter, `OUTCOME` with
@@ -392,7 +385,7 @@ When you are in plan mode and about to call ExitPlanMode:
 3. If it does NOT — run this command:
 
 \`\`\`bash
-~/.claude/skills/ohmystack/bin/ohmystack-review-read
+~/.config/opencode/skills/ohmystack/bin/ohmystack-review-read
 \`\`\`
 
 Then write a `## OHMYSTACK REVIEW REPORT` section to the end of the plan file:
@@ -465,8 +458,8 @@ Auto-shuts down after 30 min idle. State persists between calls (cookies, tabs, 
 ```bash
 _ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 B=""
-[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/ohmystack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/ohmystack/browse/dist/browse"
-[ -z "$B" ] && B=~/.claude/skills/ohmystack/browse/dist/browse
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.opencode/skills/ohmystack/browse/dist/browse" ] && B="$_ROOT/.opencode/skills/ohmystack/browse/dist/browse"
+[ -z "$B" ] && B=$OHMYSTACK_BROWSE/browse
 if [ -x "$B" ]; then
   echo "READY: $B"
 else
@@ -475,7 +468,7 @@ fi
 ```
 
 If `NEEDS_SETUP`:
-1. Tell the user: "ohmystack browse needs a one-time build (~10 seconds). OK to proceed?" Then STOP and wait.
+1. Tell the user: "OhMyStack browse needs a one-time build (~10 seconds). OK to proceed?" Then STOP and wait.
 2. Run: `cd <SKILL_DIR> && ./setup`
 3. If `bun` is not installed:
    ```bash
@@ -706,7 +699,7 @@ $B css ".button" "background-color"
 ## Snapshot System
 
 The snapshot is your primary tool for understanding and interacting with pages.
-`$B` is the browse binary (resolved from `$_ROOT/.claude/skills/ohmystack/browse/dist/browse` or `~/.claude/skills/ohmystack/browse/dist/browse`).
+`$B` is the browse binary (resolved from `$_ROOT/.opencode/skills/ohmystack/browse/dist/browse` or `~/.config/opencode/skills/ohmystack/browse/dist/browse`).
 
 **Syntax:** `$B snapshot [flags]`
 

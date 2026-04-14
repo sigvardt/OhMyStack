@@ -6,25 +6,9 @@ When I heard Karpathy say this, I wanted to find out how. How does one person sh
 
 Forked from [GStack](https://github.com/garrytan/gstack) by Garry Tan, adapted for Oh My OpenAgent
 
-I'm [Garry Tan](https://x.com/garrytan), President & CEO of [Y Combinator](https://www.ycombinator.com/). I've worked with thousands of startups — Coinbase, Instacart, Rippling — when they were one or two people in a garage. Before YC, I was one of the first eng/PM/designers at Palantir, cofounded Posterous (sold to Twitter), and built Bookface, YC's internal social network.
+OhMyStack is a fork of [GStack](https://github.com/garrytan/gstack) adapted for the **Oh My OpenAgent** ecosystem. It turns AI coding assistants into virtual engineering teams using OMO's multi-agent dispatch — named agents (Explore, Oracle, Metis, Momus, Librarian) that collaborate on planning, review, QA, and shipping.
 
-**OhMyStack is my answer.** I've been building products for twenty years, and right now I'm shipping more code than I ever have. In the last 60 days: **600,000+ lines of production code** (35% tests), **10,000-20,000 lines per day**, part-time, while running YC full-time. Here's my last `/retro` across 3 projects: **140,751 lines added, 362 commits, ~115k net LOC** in one week.
-
-**2026 — 1,237 contributions and counting:**
-
-![GitHub contributions 2026 — 1,237 contributions, massive acceleration in Jan-Mar](docs/images/github-2026.png)
-
-**2013 — when I built Bookface at YC (772 contributions):**
-
-![GitHub contributions 2013 — 772 contributions building Bookface at YC](docs/images/github-2013.png)
-
-Same person. Different era. The difference is the tooling.
-
-**OhMyStack is how I do it.** It turns Claude Code into a virtual engineering team — a CEO who rethinks the product, an eng manager who locks architecture, a designer who catches AI slop, a reviewer who finds production bugs, a QA lead who opens a real browser, a security officer who runs OWASP + STRIDE audits, and a release engineer who ships the PR. Twenty-three specialists and eight power tools, all slash commands, all Markdown, all free, MIT license.
-
-This is my open source software factory. I use it every day. I'm sharing it because these tools should be available to everyone.
-
-Fork it. Improve it. Make it yours. And if you want to hate on free open source software — you're welcome to, but I'd rather you just try it first.
+**OhMyStack is how OMO does it.** It provides twenty-five specialist skills and eight power tools, all slash commands, all Markdown, all free, MIT license.
 
 **Who this is for:**
 - **Founders and CEOs** — especially technical ones who still want to ship
@@ -50,23 +34,10 @@ Open Claude Code and paste this. Claude does the rest.
 
 > Install ohmystack: run **`git clone --single-branch --depth 1 https://github.com/sigvardt/OhMyStack.git ~/.claude/skills/ohmystack && cd ~/.claude/skills/ohmystack && ./setup`** then add a "ohmystack" section to CLAUDE.md that says to use the /browse skill from ohmystack for all web browsing, never use mcp\_\_claude-in-chrome\_\_\* tools, and lists the available skills: /office-hours, /plan-ceo-review, /plan-eng-review, /plan-design-review, /design-consultation, /design-shotgun, /design-html, /review, /ship, /land-and-deploy, /canary, /benchmark, /browse, /connect-chrome, /qa, /qa-only, /design-review, /setup-browser-cookies, /setup-deploy, /retro, /investigate, /document-release, /codex, /cso, /autoplan, /plan-devex-review, /devex-review, /careful, /freeze, /guard, /unfreeze, /ohmystack-upgrade, /learn. Then ask the user if they also want to add ohmystack to the current project so teammates get it.
 
-### Step 2: Team mode — auto-update for shared repos (recommended)
+### Step 2: Team mode (deprecated)
 
-Every developer installs globally, updates happen automatically:
-
-```bash
-cd ~/.claude/skills/ohmystack && ./setup --team
-```
-
-Then bootstrap your repo so teammates get it:
-
-```bash
-cd <your-repo>
-~/.claude/skills/ohmystack/bin/ohmystack-team-init required  # or: optional
-git add .claude/ CLAUDE.md && git commit -m "require ohmystack for AI-assisted work"
-```
-
-No vendored files in your repo, no version drift, no manual upgrades. Every Claude Code session starts with a fast auto-update check (throttled to once/hour, network-failure-safe, completely silent).
+> **Note:** Team mode is inherited from GStack and is not actively maintained in OhMyStack.
+> For shared team workflows, use Oh My OpenAgent's native agent configuration instead.
 
 > **Contributing or need full history?** The commands above use `--depth 1` for a fast install. If you plan to contribute or need full git history, do a full clone instead:
 > ```bash
@@ -362,17 +333,7 @@ I open sourced how I build software. You can fork it and make it your own.
 
 ## Privacy & Telemetry
 
-ohmystack includes **opt-in** usage telemetry to help improve the project. Here's exactly what happens:
-
-- **Default is off.** Nothing is sent anywhere unless you explicitly say yes.
-- **On first run,** ohmystack asks if you want to share anonymous usage data. You can say no.
-- **What's sent (if you opt in):** skill name, duration, success/fail, ohmystack version, OS. That's it.
-- **What's never sent:** code, file paths, repo names, branch names, prompts, or any user-generated content.
-- **Change anytime:** `ohmystack-config set telemetry off` disables everything instantly.
-
-Data is stored in [Supabase](https://supabase.com) (open source Firebase alternative). The schema is in [`supabase/migrations/`](supabase/migrations/) — you can verify exactly what's collected. The Supabase publishable key in the repo is a public key (like a Firebase API key) — row-level security policies deny all direct access. Telemetry flows through validated edge functions that enforce schema checks, event type allowlists, and field length limits.
-
-**Local analytics are always available.** Run `ohmystack-analytics` to see your personal usage dashboard from the local JSONL file — no remote data needed.
+> **Telemetry is disabled in OhMyStack.** The telemetry infrastructure inherited from GStack is present in the codebase but disabled in the preamble. No data is collected or sent.
 
 ## Troubleshooting
 

@@ -16,7 +16,7 @@ LEGACY_HOME_PATH="~/.g""stack/"
 LEGACY_REPO_URL="garrytan/g""stack"
 DOUBLE_PREFIX_TOKEN="ohmystack-""ohmystack-"
 ORIGINAL_BRAND="G""Stack"
-ATTRIBUTION_FILTER="OhMyStack[[:space:]]*\\(based on ${ORIGINAL_BRAND}|attribution|based on \\[${ORIGINAL_BRAND}\\]|adapts ${ORIGINAL_BRAND}|fork from ${ORIGINAL_BRAND}|Forked from \\[${ORIGINAL_BRAND}\\]"
+ATTRIBUTION_FILTER="OhMyStack[[:space:]]*\\(based on ${ORIGINAL_BRAND}|attribution|based on \\[${ORIGINAL_BRAND}\\]|adapts ${ORIGINAL_BRAND}|fork from ${ORIGINAL_BRAND}|Forked from \\[${ORIGINAL_BRAND}\\]|fork of \\[${ORIGINAL_BRAND}\\]|inherited from ${ORIGINAL_BRAND}|Full rebrand: ${LEGACY_TOKEN}"
 
 EXPECTED_BINS=(
   "ohmystack-analytics"
@@ -147,16 +147,11 @@ legacy_bins=("$ROOT"/bin/${LEGACY_PREFIX}*)
 shopt -u nullglob
 
 legacy_bin_issues=""
-for path in "${legacy_bins[@]}"; do
-  tool="$(basename "$path")"
-  case "$tool" in
-    "${LEGACY_PREFIX}team-init"|"${LEGACY_PREFIX}settings-hook"|"${LEGACY_PREFIX}session-update")
-      ;;
-    *)
-      legacy_bin_issues="${legacy_bin_issues}${legacy_bin_issues:+$'\n'}$path"
-      ;;
-  esac
-done
+if [ ${#legacy_bins[@]} -gt 0 ]; then
+  for path in "${legacy_bins[@]}"; do
+    legacy_bin_issues="${legacy_bin_issues}${legacy_bin_issues:+$'\n'}$path"
+  done
+fi
 
 if [ -z "$legacy_bin_issues" ]; then
   record_pass "Check 3: No old bin tools"

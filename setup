@@ -53,7 +53,7 @@ link_path() {
 install_generated_opencode_skills() {
   local generated_skills_dir="$1"
   local install_root="$2"
-  local root_skill_dir="$generated_skills_dir/$OLD_BRAND"
+  local root_skill_dir="$generated_skills_dir/$NEW_BRAND"
 
   if [ ! -d "$generated_skills_dir" ]; then
     echo "OhMyStack setup failed: generated OpenCode skills are missing at $generated_skills_dir" >&2
@@ -68,10 +68,10 @@ install_generated_opencode_skills() {
   mkdir -p "$install_root"
   link_path "$root_skill_dir/SKILL.md" "$install_root/SKILL.md"
 
-  for skill_dir in "$generated_skills_dir"/"${OLD_BRAND}"*/; do
+  for skill_dir in "$generated_skills_dir"/"${NEW_BRAND}"*/; do
     [ -d "$skill_dir" ] || continue
     skill_name="$(basename "$skill_dir")"
-    [ "$skill_name" = "$OLD_BRAND" ] && continue
+    [ "$skill_name" = "$NEW_BRAND" ] && continue
     link_path "$skill_dir" "$install_root/$skill_name"
   done
 }
