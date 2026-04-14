@@ -1,13 +1,13 @@
 # OhMyStack Changelog
 
-> OhMyStack is based on [OhMyStack](https://github.com/garrytan/ohmystack) by Garry Tan.
-> This fork adapts OhMyStack for the OhMy OpenAgent ecosystem with OMO-native
+> OhMyStack is based on [GStack](https://github.com/garrytan/gstack) by Garry Tan.
+> This fork adapts GStack for the OhMy OpenAgent ecosystem with OMO-native
 > multi-agent dispatch, OpenCode-only host support, and named agent workflows.
 
 ## [1.0.0] — 2026-04-14
 
 ### Added
-- Initial fork from OhMyStack v0.16.4.0
+- Initial fork from GStack v0.16.4.0
 - Full rebrand: ohmystack → ohmystack
 - OpenCode-only host support (7 unused hosts stripped)
 - OMO multi-agent dispatch in 25 skills (+ 4 native rebrand = 29 total)

@@ -4,7 +4,7 @@
 
 When I heard Karpathy say this, I wanted to find out how. How does one person ship like a team of twenty? Peter Steinberger built [OpenClaw](https://github.com/openclaw/openclaw) — 247K GitHub stars — essentially solo with AI agents. The revolution is here. A single builder with the right tooling can move faster than a traditional team.
 
-Forked from OhMyStack by Garry Tan, adapted for Oh My OpenAgent
+Forked from [GStack](https://github.com/garrytan/gstack) by Garry Tan, adapted for Oh My OpenAgent
 
 I'm [Garry Tan](https://x.com/garrytan), President & CEO of [Y Combinator](https://www.ycombinator.com/). I've worked with thousands of startups — Coinbase, Instacart, Rippling — when they were one or two people in a garage. Before YC, I was one of the first eng/PM/designers at Palantir, cofounded Posterous (sold to Twitter), and built Bookface, YC's internal social network.
 
@@ -48,7 +48,7 @@ Fork it. Improve it. Make it yours. And if you want to hate on free open source 
 
 Open Claude Code and paste this. Claude does the rest.
 
-> Install ohmystack: run **`git clone --single-branch --depth 1 https://github.com/garrytan/ohmystack.git ~/.claude/skills/ohmystack && cd ~/.claude/skills/ohmystack && ./setup`** then add a "ohmystack" section to CLAUDE.md that says to use the /browse skill from ohmystack for all web browsing, never use mcp\_\_claude-in-chrome\_\_\* tools, and lists the available skills: /office-hours, /plan-ceo-review, /plan-eng-review, /plan-design-review, /design-consultation, /design-shotgun, /design-html, /review, /ship, /land-and-deploy, /canary, /benchmark, /browse, /connect-chrome, /qa, /qa-only, /design-review, /setup-browser-cookies, /setup-deploy, /retro, /investigate, /document-release, /codex, /cso, /autoplan, /plan-devex-review, /devex-review, /careful, /freeze, /guard, /unfreeze, /ohmystack-upgrade, /learn. Then ask the user if they also want to add ohmystack to the current project so teammates get it.
+> Install ohmystack: run **`git clone --single-branch --depth 1 https://github.com/sigvardt/OhMyStack.git ~/.claude/skills/ohmystack && cd ~/.claude/skills/ohmystack && ./setup`** then add a "ohmystack" section to CLAUDE.md that says to use the /browse skill from ohmystack for all web browsing, never use mcp\_\_claude-in-chrome\_\_\* tools, and lists the available skills: /office-hours, /plan-ceo-review, /plan-eng-review, /plan-design-review, /design-consultation, /design-shotgun, /design-html, /review, /ship, /land-and-deploy, /canary, /benchmark, /browse, /connect-chrome, /qa, /qa-only, /design-review, /setup-browser-cookies, /setup-deploy, /retro, /investigate, /document-release, /codex, /cso, /autoplan, /plan-devex-review, /devex-review, /careful, /freeze, /guard, /unfreeze, /ohmystack-upgrade, /learn. Then ask the user if they also want to add ohmystack to the current project so teammates get it.
 
 ### Step 2: Team mode — auto-update for shared repos (recommended)
 
@@ -70,7 +70,7 @@ No vendored files in your repo, no version drift, no manual upgrades. Every Clau
 
 > **Contributing or need full history?** The commands above use `--depth 1` for a fast install. If you plan to contribute or need full git history, do a full clone instead:
 > ```bash
-> git clone https://github.com/garrytan/ohmystack.git ~/.claude/skills/ohmystack
+> git clone https://github.com/sigvardt/OhMyStack.git ~/.claude/skills/ohmystack
 > ```
 
 ### OpenClaw
@@ -78,7 +78,7 @@ No vendored files in your repo, no version drift, no manual upgrades. Every Clau
 OpenClaw spawns Claude Code sessions via ACP, so every ohmystack skill just works
 when Claude Code has ohmystack installed. Paste this to your OpenClaw agent:
 
-> Install ohmystack: run `git clone --single-branch --depth 1 https://github.com/garrytan/ohmystack.git ~/.claude/skills/ohmystack && cd ~/.claude/skills/ohmystack && ./setup` to install ohmystack for Claude Code. Then add a "Coding Tasks" section to AGENTS.md that says: when spawning Claude Code sessions for coding work, tell the session to use ohmystack skills. Include these examples — security audit: "Load ohmystack. Run /cso", code review: "Load ohmystack. Run /review", QA test a URL: "Load ohmystack. Run /qa https://...", build a feature end-to-end: "Load ohmystack. Run /autoplan, implement the plan, then run /ship", plan before building: "Load ohmystack. Run /office-hours then /autoplan. Save the plan, don't implement."
+> Install ohmystack: run `git clone --single-branch --depth 1 https://github.com/sigvardt/OhMyStack.git ~/.claude/skills/ohmystack && cd ~/.claude/skills/ohmystack && ./setup` to install ohmystack for Claude Code. Then add a "Coding Tasks" section to AGENTS.md that says: when spawning Claude Code sessions for coding work, tell the session to use ohmystack skills. Include these examples — security audit: "Load ohmystack. Run /cso", code review: "Load ohmystack. Run /review", QA test a URL: "Load ohmystack. Run /qa https://...", build a feature end-to-end: "Load ohmystack. Run /autoplan, implement the plan, then run /ship", plan before building: "Load ohmystack. Run /office-hours then /autoplan. Save the plan, don't implement."
 
 **After setup, just talk to your OpenClaw agent naturally:**
 
@@ -116,7 +116,7 @@ ohmystack works on 8 AI coding agents, not just Claude. Setup auto-detects which
 agents you have installed:
 
 ```bash
-git clone --single-branch --depth 1 https://github.com/garrytan/ohmystack.git ~/ohmystack
+git clone --single-branch --depth 1 https://github.com/sigvardt/OhMyStack.git ~/ohmystack
 cd ~/ohmystack && ./setup
 ```
 

@@ -4,7 +4,7 @@ description: |
   Upgrade ohmystack to the latest version. Detects global vs vendored install,
   runs the upgrade, and shows what's new. Use when asked to "upgrade ohmystack",
   "update ohmystack", or "get latest version".
-  Voice triggers (speech-to-text aliases): "upgrade the tools", "update the tools", "oh my stack upgrade", "oh my stack upgrade".
+  Voice triggers (speech-to-text aliases): "upgrade the tools", "update the tools", "oh my stack upgrade".
 ---
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->

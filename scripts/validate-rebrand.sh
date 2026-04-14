@@ -16,7 +16,7 @@ LEGACY_HOME_PATH="~/.g""stack/"
 LEGACY_REPO_URL="garrytan/g""stack"
 DOUBLE_PREFIX_TOKEN="ohmystack-""ohmystack-"
 ORIGINAL_BRAND="G""Stack"
-ATTRIBUTION_FILTER="OhMyStack[[:space:]]*\\(based on ${ORIGINAL_BRAND}|attribution"
+ATTRIBUTION_FILTER="OhMyStack[[:space:]]*\\(based on ${ORIGINAL_BRAND}|attribution|based on \\[${ORIGINAL_BRAND}\\]|adapts ${ORIGINAL_BRAND}|fork from ${ORIGINAL_BRAND}|Forked from \\[${ORIGINAL_BRAND}\\]"
 
 EXPECTED_BINS=(
   "ohmystack-analytics"
@@ -189,7 +189,7 @@ else
 fi
 
 # Check 7
-url_results="$(search_all "$LEGACY_REPO_URL")"
+url_results="$(filter_attribution_lines "$(search_all "$LEGACY_REPO_URL")")"
 if [ -z "$url_results" ]; then
   record_pass "Check 7: URL check"
 else
